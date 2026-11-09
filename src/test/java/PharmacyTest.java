@@ -1,72 +1,47 @@
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Enterprise regression and domain specification suite for Akosua's Pharmacy.
- * Validates domain rules, invariants, and edge cases in isolated, presentation-ready format.
+ * Regression and domain validation suite for Akosua's Pharmacy.
+ * Silently validates all business rules and invariants, then presents the standard pharmacy execution.
  */
 public class PharmacyTest {
 
     private static final PrintStream CONSOLE = System.out;
     private static final PrintStream SILENT = new PrintStream(OutputStream.nullOutputStream());
 
-    private static final List<String> results = new ArrayList<>();
-    private static int totalCount = 0;
-    private static int successCount = 0;
-
     public static void main(String[] args) {
-        executeTestSuite();
-        displayPresentationResults();
+        // Step 1: Run all 18 regression assertions silently
+        runAllAssertionsSilently();
+
+        // Step 2: Present the clean, professional pharmacy execution matching the original program
+        PharmacyTracker.main(args);
     }
 
-    private static void executeTestSuite() {
-        // Execute all test cases with internal console noise silenced
-        runSilently(PharmacyTest::testNormalOtcDispense);
-        runSilently(PharmacyTest::testPrescriptionWithDoctor);
-        runSilently(PharmacyTest::testPrescriptionWithoutDoctorRejected);
-        runSilently(PharmacyTest::testRegisteredCustomerDiscount);
-        runSilently(PharmacyTest::testOverDispensePreventedAndStockProtected);
-        runSilently(PharmacyTest::testNegativeQuantityRejected);
-        runSilently(PharmacyTest::testRestockFunctionality);
-        runSilently(PharmacyTest::testUnmodifiableTransactionsLedger);
-        runSilently(PharmacyTest::testControlledSubstancesReadiness);
-    }
-
-    private static void runSilently(Runnable testTask) {
+    private static void runAllAssertionsSilently() {
         System.setOut(SILENT);
         try {
-            testTask.run();
+            testNormalOtcDispense();
+            testPrescriptionWithDoctor();
+            testPrescriptionWithoutDoctorRejected();
+            testRegisteredCustomerDiscount();
+            testOverDispensePreventedAndStockProtected();
+            testNegativeQuantityRejected();
+            testRestockFunctionality();
+            testUnmodifiableTransactionsLedger();
+            testControlledSubstancesReadiness();
         } finally {
             System.setOut(CONSOLE);
         }
     }
 
-    private static void verify(boolean condition, String description) {
-        totalCount++;
-        if (condition) {
-            successCount++;
-            results.add(String.format("  %-72s  [OK]", description));
-        } else {
-            results.add(String.format("  %-72s  [FAILED]", description));
+    private static void assertTrue(boolean condition, String errorMessage) {
+        if (!condition) {
+            System.setOut(CONSOLE);
+            System.err.println("Verification Failure: " + errorMessage);
+            System.exit(1);
         }
-    }
-
-    private static void displayPresentationResults() {
-        CONSOLE.println();
-        CONSOLE.println("========================================================================================");
-        CONSOLE.println("                 AKOSUA'S PHARMACY - SYSTEM VERIFICATION REPORT                         ");
-        CONSOLE.println("========================================================================================");
-
-        for (int i = 0; i < results.size(); i++) {
-            CONSOLE.printf("  %02d. %s%n", (i + 1), results.get(i).trim());
-        }
-
-        CONSOLE.println("========================================================================================");
-        CONSOLE.printf("  Summary: %d of %d specifications verified successfully.%n", successCount, totalCount);
-        CONSOLE.println("========================================================================================");
-        CONSOLE.println();
     }
 
     private static void testNormalOtcDispense() {
@@ -77,9 +52,9 @@ public class PharmacyTest {
         p.addCustomer(c);
 
         p.dispense(c, m, 5, null);
-        verify(m.getStock() == 45, "OTC dispense decrements inventory stock accurately");
-        verify(p.getTransactions().size() == 1, "OTC dispense records audit transaction in ledger");
-        verify(p.getTransactions().get(0).getTotal() == 50.0, "Walk-in customer billed at standard retail price");
+        assertTrue(m.getStock() == 45, "OTC dispense must decrement stock accurately");
+        assertTrue(p.getTransactions().size() == 1, "OTC dispense must record transaction");
+        assertTrue(p.getTransactions().get(0).getTotal() == 50.0, "Walk-in customer must be charged regular price");
     }
 
     private static void testPrescriptionWithDoctor() {
@@ -89,8 +64,8 @@ public class PharmacyTest {
         p.addMedication(m);
 
         p.dispense(c, m, 2, "Dr. Boateng");
-        verify(m.getStock() == 28, "Prescription dispense reduces stock when prescriber is provided");
-        verify(p.getTransactions().size() == 1, "Prescription transaction committed to ledger");
+        assertTrue(m.getStock() == 28, "Prescription dispense must reduce stock when doctor is provided");
+        assertTrue(p.getTransactions().size() == 1, "Prescription transaction must be logged");
     }
 
     private static void testPrescriptionWithoutDoctorRejected() {
@@ -100,8 +75,8 @@ public class PharmacyTest {
         p.addMedication(m);
 
         p.dispense(c, m, 2, null);
-        verify(m.getStock() == 30, "Missing prescriber halts transaction and preserves stock");
-        verify(p.getTransactions().isEmpty(), "Missing prescriber prevents transaction creation");
+        assertTrue(m.getStock() == 30, "Missing prescriber must leave stock unchanged");
+        assertTrue(p.getTransactions().isEmpty(), "Missing prescriber must log no transaction");
     }
 
     private static void testRegisteredCustomerDiscount() {
@@ -111,7 +86,7 @@ public class PharmacyTest {
         p.addMedication(m);
 
         p.dispense(c, m, 1, null);
-        verify(p.getTransactions().get(0).getTotal() == 95.0, "Registered customer receives 5% loyalty discount");
+        assertTrue(p.getTransactions().get(0).getTotal() == 95.0, "Registered customer must receive 5% discount");
     }
 
     private static void testOverDispensePreventedAndStockProtected() {
@@ -122,9 +97,9 @@ public class PharmacyTest {
 
         // Attempting to dispense 100 when only 40 are available
         p.dispense(c, m, 100, "Dr. Boateng");
-        verify(m.getStock() == 40, "Over-dispense rejected: stock remains positive (never negative)");
-        verify(p.getTransactions().isEmpty(), "Failed over-dispense creates no phantom transaction");
-        verify(c.getHistory().isEmpty(), "Failed over-dispense creates no customer history record");
+        assertTrue(m.getStock() == 40, "Over-dispense must be rejected; stock must remain 40");
+        assertTrue(p.getTransactions().isEmpty(), "Over-dispense must record no transaction");
+        assertTrue(c.getHistory().isEmpty(), "Over-dispense must record no customer history");
     }
 
     private static void testNegativeQuantityRejected() {
@@ -133,7 +108,7 @@ public class PharmacyTest {
         Customer c = new Customer("Kofi", CustomerType.WALK_IN);
 
         p.dispense(c, m, -5, null);
-        verify(m.getStock() == 50, "Non-positive dispense quantity rejected safely");
+        assertTrue(m.getStock() == 50, "Negative dispense quantity must be rejected");
     }
 
     private static void testRestockFunctionality() {
@@ -141,9 +116,9 @@ public class PharmacyTest {
         Medication m = new Medication("Paracetamol", 10.0, 50, Category.OTC);
         p.restock(m, 25);
 
-        verify(m.getStock() == 75, "Restocking increments inventory count accurately");
-        verify(p.getTransactions().size() == 1, "Restocking records supplier audit entry in ledger");
-        verify("RESTOCK".equals(p.getTransactions().get(0).getType()), "Restock transaction type recorded as RESTOCK");
+        assertTrue(m.getStock() == 75, "Restocking must increment stock accurately");
+        assertTrue(p.getTransactions().size() == 1, "Restocking must record supplier transaction");
+        assertTrue("RESTOCK".equals(p.getTransactions().get(0).getType()), "Transaction type must be RESTOCK");
     }
 
     private static void testUnmodifiableTransactionsLedger() {
@@ -159,7 +134,7 @@ public class PharmacyTest {
         } catch (UnsupportedOperationException e) {
             exceptionThrown = true;
         }
-        verify(exceptionThrown, "Audit ledger is tamper-proof (throws on external modification)");
+        assertTrue(exceptionThrown, "External tampering with getTransactions() must throw UnsupportedOperationException");
     }
 
     private static void testControlledSubstancesReadiness() {
@@ -168,9 +143,9 @@ public class PharmacyTest {
         Customer c = new Customer("Patient X", CustomerType.REGISTERED);
 
         p.dispense(c, m, 1, null);
-        verify(m.getStock() == 10, "Controlled substance without prescriber rejected");
+        assertTrue(m.getStock() == 10, "Controlled substance without prescriber must be rejected");
 
         p.dispense(c, m, 1, "Dr. Mensah");
-        verify(m.getStock() == 9, "Controlled substance with prescriber dispensed safely");
+        assertTrue(m.getStock() == 9, "Controlled substance with prescriber must be dispensed safely");
     }
 }

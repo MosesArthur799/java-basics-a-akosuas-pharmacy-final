@@ -57,8 +57,7 @@ public class Pharmacy {
 
         // Rule 2: Enforce the core business invariant (Stock can never drift below zero)
         if (qty > m.getStock()) {
-            System.out.println("Cannot dispense " + qty + " x " + m.getName() + " to " + c.getName()
-                    + ": only " + m.getStock() + " in stock");
+            System.out.println("Cannot dispense " + qty + " x " + m.getName() + ": only " + m.getStock() + " in stock");
             return;
         }
 
