@@ -1,69 +1,385 @@
-# Dual-Perspective Architectural Specification & Diagnostic Report: `diagnoses.md`
-**Project:** Akosua's Pharmacy Management & Dispensing System  
-**Author:** Principal Software Architect & Technical Communicator  
-**Document Classification:** Production Architectural Specification & Core Diagnostic Review  
-**Deliverable Phase:** Deliverable 1 (Pre-Rebuild Baseline Diagnosis & Target Blueprint)
+# Dual-Perspective Architectural Specification & Diagnostic Report: `DIAGNOSIS.md`
+
+```
+  █████╗ ██╗  ██╗ ██████╗ ███████╗██╗   ██╗ █████╗     ██████╗ ██╗  ██╗ █████╗ ██████╗ ███╗   ███╗ █████╗  ██████╗██╗   ██╗
+ ██╔══██╗██║ ██╔╝██╔═══██╗██╔════╝██║   ██║██╔══██╗    ██╔══██╗██║  ██║██╔══██╗██╔══██╗████╗ ████║██╔══██╗██╔════╝╚██╗ ██╔╝
+ ███████║█████╔╝ ██║   ██║███████╗██║   ██║███████║    ██████╔╝███████║███████║██████╔╝██╔████╔██║███████║██║      ╚████╔╝ 
+ ██╔══██║██╔═██╗ ██║   ██║╚════██║██║   ██║██╔══██║    ██╔═══╝ ██╔══██║██╔══██║██╔══██╗██║╚██╔╝██║██╔══██║██║       ╚██╔╝  
+ ██║  ██║██║  ██╗╚██████╔╝███████║╚██████╔╝██║  ██║    ██║     ██║  ██║██║  ██║██║  ██║██║ ╚═╝ ██║██║  ██║╚██████╗   ██║   
+ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝    ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝   
+```
 
 ---
 
-```
-========================================================================================
-                      AKOSUA'S PHARMACY - SYSTEM ARCHITECTURE BLUEPRINT
-========================================================================================
+### Document Metadata & Architectural Governance
+| Metadata Property | Specification Value |
+| :--- | :--- |
+| **System Identity** | Akosua's Community Pharmacy Dispensing & Inventory Management Engine |
+| **Engineering Author** | Principal Software Architect & Lead Technical Communicator |
+| **Document Classification** | Production Architectural Specification & Comprehensive Diagnostic Baseline |
+| **Deliverable Lifecycle** | Phase 1 Pre-Rebuild Milestone (Committed strictly prior to source-code mutation) |
+| **Architectural Paradigms** | Domain-Driven Design (DDD), Hexagonal Architecture, Layered Separation of Concerns (SoC) |
+| **Language Target** | OpenJDK 21 (LTS) |
+| **Regulatory Framework** | Pharmacy Council Standards & Controlled Substances Dispensing Compliance |
 
-                 +---------------------------------------------+
-                 |               PharmacyTracker               |
-                 |---------------------------------------------|
-                 | + main(args: String[]): void                |
-                 +----------------------+----------------------+
-                                        | (entry point / orchestrator)
-                                        v
-                 +---------------------------------------------+
-                 |                  Pharmacy                   |
-                 |---------------------------------------------|
-                 | - name: String                              |
-                 | - meds: List<Medication>                    |
-                 | - customers: List<Customer>                 |
-                 | - transactions: List<Transaction>           |
-                 |---------------------------------------------|
-                 | + dispense(c, m, qty, prescriber): void     |
-                 | + restock(m, qty): void                     |
-                 | + printReport(): void                       |
-                 +----------+------------------+---------------+
-                            |                  |
-           +----------------+                  +----------------+
-           |                                                    |
-           v                                                    v
-+-------------------------------+              +--------------------------------+
-|          Medication           |              |          Transaction           |
-|-------------------------------|              |--------------------------------|
-| - id: int                     |              | - id: int                      |
-| - name: String                |              | - customerName: String         |
-| - price: double               |              | - medName: String              |
-| - stock: int                  |              | - qty: int                     |
-| - category: String / Category |              | - total: double                |
-|-------------------------------|              | - type: String / TxType        |
-| + reduceStock(qty: int): void |              |--------------------------------|
-| + increaseStock(qty: int): void|             | + getCustomerName(): String    |
-| + getStock(): int             |              | + getTotal(): double           |
-+-------------------------------+              +--------------------------------+
-           ^
-           |
-+-------------------------------+
-|           Customer            |
-|-------------------------------|
-| - id: int                     |
-| - name: String                |
-| - kind: String / CustomerType |
-| - phone: String               |
-| - history: List<String>       |
-|-------------------------------|
-| + setPhone(phone: String): void|
-| + addHistory(entry: String): void|
-+-------------------------------+
+---
+
+## Executive Blueprint & Target 3D Architecture
+
+### Target Architecture Schematic (Class Blueprint)
+
 ```
+========================================================================================================
+                                 TARGET ARCHITECTURAL CLASS BLUEPRINT
+========================================================================================================
+
+                 +-------------------------------------------------------------+
+                 |                       PharmacyTracker                       |
+                 |-------------------------------------------------------------|
+                 | + main(args: String[]): void                                |
+                 +------------------------------+------------------------------+
+                                                |
+                                                | (bootstraps & orchestrates)
+                                                v
+                 +-------------------------------------------------------------+
+                 |                          Pharmacy                           |
+                 |-------------------------------------------------------------|
+                 | - name: String                                              |
+                 | - meds: List<Medication>                                    |
+                 | - customers: List<Customer>                                 |
+                 | - transactions: List<Transaction>                           |
+                 |-------------------------------------------------------------|
+                 | + dispense(c: Customer, m: Medication, qty: int, doc: String)|
+                 | + restock(m: Medication, qty: int): void                    |
+                 | + printReport(): void                                       |
+                 | + getTransactions(): List<Transaction>                      |
+                 +--------------+-------------------------------+--------------+
+                                |                               |
+               +----------------+                               +----------------+
+               |                                                                 |
+               v                                                                 v
++---------------------------------------------+   +---------------------------------------------+
+|                 Medication                  |   |                 Transaction                 |
+|---------------------------------------------|   |---------------------------------------------|
+| - id: int                                   |   | - id: int                                   |
+| - name: String                              |   | - customerName: String                      |
+| - price: double                             |   | - medName: String                           |
+| - stock: int                                |   | - qty: int                                  |
+| - category: Category                        |   | - total: double                             |
+|---------------------------------------------|   | - type: TxType                              |
+| + reduceStock(qty: int): void               |   |---------------------------------------------|
+| + increaseStock(qty: int): void             |   | + getCustomerName(): String                 |
+| + getStock(): int                           |   | + getTotal(): double                        |
+| + getPrice(): double                        |   | + getMedName(): String                      |
++---------------------------------------------+   +---------------------------------------------+
+                       ^
+                       |
++---------------------------------------------+
+|                  Customer                   |
+|---------------------------------------------|
+| - id: int                                   |
+| - name: String                              |
+| - kind: CustomerType                        |
+| - phone: String                             |
+| - history: List<String>                     |
+|---------------------------------------------|
+| + setPhone(phone: String): void             |
+| + addHistory(entry: String): void           |
+| + getHistory(): List<String>                |
++---------------------------------------------+
+```
+
+### Official Domain Sketch Artifact (Figure 1.0)
+
+> [!IMPORTANT]
+> **Figure 1.0:** The original target architecture blueprint illustrating entity relationships, structural associations, and encapsulated domain methods. This design serves as the authoritative blueprint for the refactoring milestone.
 
 ![Akosua's Pharmacy - Target Architecture Blueprint](architecture_blueprint.png)
+
+---
+
+## 3D Isometric Architectural Visualizations
+
+### 1. Exploded 3D Layer Stack (Tier Separation)
+The system decouples untrusted presentation logic from domain invariants and tamper-proof storage through four distinct, vertically isolated structural tiers:
+
+```text
+                  +=======================================================+
+                 /                                                       /|
+                /         TIER 4: PRESENTATION & CLIENT GATEWAY         / |
+               /   [ PharmacyTracker CLI | Standard I/O | Formatters ] /  |
+              +=======================================================+   |
+              |                                                       |   |
+              |   +-----------------------------------------------+   |   |
+              |   | - User Command Parsing & Arguments Extraction |   |  /+
+              |   | - CLI Report Formatting & Console Renderers   |   | / /
+              |   +-----------------------------------------------+   |/ /
+              +=======================================================+ /
+                                        |  (Dispatches Order Request)
+                                        v
+                  +=======================================================+
+                 /                                                       /|
+                /      TIER 3: APPLICATION & DOMAIN ORCHESTRATION       / |
+               /   [ Pharmacy Service Aggregate | Workflow Engine ]    /  |
+              +=======================================================+   |
+              |                                                       |   |
+              |   +-----------------------------------------------+   |   |
+              |   | - Coordinates Multi-Entity Dispense Workflow  |   |  /+
+              |   | - Prescriber Credential & Rule Verification   |   | / /
+              |   +-----------------------------------------------+   |/ /
+              +=======================================================+ /
+                                        |  (Invokes Entity State Guards)
+                                        v
+                  +=======================================================+
+                 /                                                       /|
+                /         TIER 2: CORE DOMAIN INVENTORY VAULT           / |
+               /   [ Medication Entity | Customer Profile | Rules ]    /  |
+              +=======================================================+   |
+              |                                                       |   |
+              |   +-----------------------------------------------+   |   |
+              |   | - Fully Encapsulated Private Heap Memory      |   |  /+
+              |   | - Atomic Invariant Guard: reduceStock(qty)    |   | / /
+              |   +-----------------------------------------------+   |/ /
+              +=======================================================+ /
+                                        |  (Appends Unalterable Audit Snapshots)
+                                        v
+                  +=======================================================+
+                 /                                                       /|
+                /          TIER 1: TAMPER-PROOF AUDIT VAULT             / |
+               /   [ Transaction Ledger | Unmodifiable Event Store ]   /  |
+              +=======================================================+   |
+              |                                                       |   |
+              |   +-----------------------------------------------+   |   |
+              |   | - Structurally Immutable Transaction Records  |   |  /
+              |   | - Collections.unmodifiableList Defensive View |   | /
+              |   +-----------------------------------------------+   |/
+              +=======================================================+
+```
+
+### 2. 3D Isometric Dispensary Counter & Vault Security Boundary
+The physical dispensary metaphor maps directly to software encapsulation barriers, preventing external client code from directly accessing internal heap state:
+
+```text
+               PUBLIC ZONE                                        SECURE VAULT ZONE
+        (Untrusted Caller / Client)                           (Encapsulated Domain Heap)
+                                            
+                                         SECURITY WALL
+                                        +=============+
+                  +----------------+   /|             |\   +----------------------+
+                 /                /|  / |             | \ /                      /|
+                /    Customer    / | /  |   BARRIER   |  /      Medication      / |
+               /   [WALK-IN /   /  |/   |   COUNTER   | /       [THE VAULT]    /  |
+              +----------------+   |    |             |/   +----------------------+   |
+              | - name: String |   |    |             |    | - stock: int [PRIV]  |   |
+              | - phone: String|  /+    |  PHARMACIST |    | - price: double      |  /+
+              +----------------+ / /    |  (GATEWAY)  |    +----------------------+ / /
+                |                |/     |             |      |                      |/
+                |                /      +=============+      |                      /
+                | Makes Request         /             \      | Enforces Guard:
+                |                      /               \     | (qty <= stock)
+                v                     v                 v    v
+           "Dispense 100" ----> [ Validation ] ----> [ Atomic Mutation ] ----> Stock = 30
+                                  Check Doctor          (Rejection if qty > stock)
+```
+
+### 3. 3D Isometric Domain Entity Mesh
+Relationships between domain aggregates, value objects, and entities in 3D perspective:
+
+```text
+                        +--------------------------------+
+                       /                                /|
+                      /           Medication           / |
+                     /            [THE VAULT]         /  |
+                    +--------------------------------+   |
+                    | - id: int                      |   |
+                    | - name: String                 |   |
+                    | - price: double                |   |
+                    | - stock: int  <-- [PRIVATE]    |  /+
+                    | - category: Category           | / /
+                    +--------------------------------+/ /
+                    | + reduceStock(qty: int): void  | /
+                    | + increaseStock(qty: int): void|/
+                    +--------------------------------+
+                                    ^
+                                    | Controlled Invariant Invocation
+                                    |
+                        +--------------------------------+
+                       /                                /|
+                      /            Pharmacy            / |
+                     /           [DISPENSARY]         /  |
+                    +--------------------------------+   |
+                    | - name: String                 |   |
+                    | - meds: List<Medication>       |   |
+                    | - customers: List<Customer>    |  /+
+                    | - transactions: List<Tx>       | / /
+                    +--------------------------------+/ /
+                    | + dispense(c, m, qty, doc)     | /
+                    | + restock(m, qty)              |/
+                    +--------------------------------+
+                                    |
+                     +--------------+--------------+
+                     | Appends Event               | Maintains Profile
+                     v                             v
+      +--------------------------------+   +--------------------------------+
+     /                                /|  /                                /|
+    /          Transaction           / | /            Customer            / |
+   /       [IMMUTABLE AUDIT]       /  | /           [PATIENT FILE]       /  |
+  +--------------------------------+   |+--------------------------------+   |
+  | - id: int                      |   || - id: int                      |   |
+  | - customerName: String         |   || - name: String                 |   |
+  | - medName: String              |  /+ | - kind: CustomerType           |  /+
+  | - qty: int | total: double     | / / | - phone: String               | / /
+  | - type: TxType                 |/ /  | - history: List<String>       |/ /
+  +--------------------------------+/ /  +--------------------------------+/ /
+  | (READONLY VALUE OBJECT)        | /   | + setPhone(phone: String)     | /
+  +--------------------------------+/    | + addHistory(entry: String)   |/
+                                         +--------------------------------+
+```
+
+---
+
+## Formal Architecture & UML Diagrams
+
+### Formal UML Class Diagram
+
+```mermaid
+classDiagram
+    direction TB
+
+    class PharmacyTracker {
+        +main(args: String[])$ void
+    }
+
+    class Pharmacy {
+        -String name
+        -List~Medication~ meds
+        -List~Customer~ customers
+        -List~Transaction~ transactions
+        +Pharmacy(name: String)
+        +addMedication(m: Medication) void
+        +addCustomer(c: Customer) void
+        +dispense(c: Customer, m: Medication, qty: int, prescriber: String) void
+        +restock(m: Medication, qty: int) void
+        +getTransactions() List~Transaction~
+        +printReport() void
+    }
+
+    class Medication {
+        -int id
+        -String name
+        -double price
+        -int stock
+        -Category category
+        +Medication(name: String, price: double, stock: int, category: Category)
+        +reduceStock(qty: int) void
+        +increaseStock(qty: int) void
+        +getId() int
+        +getName() String
+        +getPrice() double
+        +getStock() int
+        +getCategory() Category
+    }
+
+    class Customer {
+        -int id
+        -String name
+        -CustomerType kind
+        -String phone
+        -List~String~ history
+        +Customer(name: String, kind: CustomerType)
+        +getId() int
+        +getName() String
+        +getKind() CustomerType
+        +getPhone() String
+        +setPhone(phone: String) void
+        +addHistory(entry: String) void
+        +getHistory() List~String~
+    }
+
+    class Transaction {
+        -int id
+        -String customerName
+        -String medName
+        -int qty
+        -double total
+        -TransactionType type
+        +Transaction(customerName: String, medName: String, qty: int, total: double, type: TransactionType)
+        +getId() int
+        +getCustomerName() String
+        +getMedName() String
+        +getQty() int
+        +getTotal() double
+        +getType() TransactionType
+    }
+
+    class Category {
+        <<enumeration>>
+        OTC
+        PRESCRIPTION
+        CONTROLLED
+    }
+
+    class CustomerType {
+        <<enumeration>>
+        WALK_IN
+        REGISTERED
+    }
+
+    class TransactionType {
+        <<enumeration>>
+        DISPENSE
+        RESTOCK
+    }
+
+    PharmacyTracker ..> Pharmacy : bootstraps
+    Pharmacy "1" *-- "*" Medication : owns & monitors
+    Pharmacy "1" o-- "*" Customer : registers & records
+    Pharmacy "1" *-- "*" Transaction : immutably audits
+    Medication --> Category : categorized by
+    Customer --> CustomerType : classified as
+    Transaction --> TransactionType : recorded as
+```
+
+### Transaction Execution & Exception Handling Sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cashier as Cashier / Terminal
+    participant PT as PharmacyTracker
+    participant P as Pharmacy
+    participant M as Medication
+    participant C as Customer
+    participant T as Transaction
+
+    Cashier->>PT: Request Dispense(Kofi, Amoxicillin, 100, "Dr. Boateng")
+    PT->>P: dispense(kofi, amoxicillin, 100, "Dr. Boateng")
+    
+    activate P
+    Note over P: Invariant Check: Requires Prescriber?
+    P->>P: Validate: Prescriber is not null/empty (Passed)
+
+    Note over P,M: Attempt Stock Reduction
+    P->>M: reduceStock(100)
+    activate M
+    Note over M: Invariant Check: qty (100) <= stock (40)?
+    
+    alt Insufficient Stock (Violation Detected!)
+        M-->>P: throw InsufficientStockException("Cannot dispense 100...")
+        deactivate M
+        Note over P: Catch Exception & Rollback
+        P-->>PT: Output: "Dispense rejected: Insufficient stock (40 available)"
+        Note over P,C: NO stock modified, NO transaction recorded!
+    else Valid Stock Available (qty <= stock)
+        M->>M: stock = stock - qty
+        M-->>P: Stock Updated Successfully
+        P->>C: addHistory("Got 10 x Amoxicillin")
+        P->>T: new Transaction(...)
+        P->>P: transactions.add(tx)
+        P-->>PT: Print: "Dispensed 10 x Amoxicillin..."
+    end
+    deactivate P
+```
 
 ---
 
@@ -72,7 +388,7 @@
 2. [Defect Audit & Root Cause Analysis (Ranked by Risk)](#defect-audit--root-cause-analysis-ranked-by-risk)
 3. [Section 1: Executive Requirements & System Blueprint](#section-1-executive-requirements--system-blueprint)
    - 1.1 Structural Sketch Analysis
-   - 1.2 System Rules & Constraints
+   - 1.2 System Rules & Technical Constraints
 4. [Section 2: Diagnostics: State Protection & Security Boundaries](#section-2-diagnostics-state-protection--security-boundaries)
    - 2.1 The "Security Guard" & Vault Analogy (Encapsulation)
    - 2.2 System Decoupling & Role Division (Separation of Concerns)
@@ -92,51 +408,80 @@
 
 ## Executive Summary & Business Context
 
-Akosua runs an essential community pharmacy serving both walk-in neighborhood patrons and registered patients requiring chronic therapy monitoring. The pharmacy relies on an internal software application originally authored in haste by a departed intern. While the program executes its basic happy-path routines without crashing immediately, it exhibits profound architectural decay, severe state vulnerabilities, and zero defensive boundary controls.
+Akosua runs an essential community pharmacy serving both neighborhood walk-ins and registered patients managing chronic conditions. The pharmacy relies on an internal software tool written in haste by a departed intern. While the program executes simple happy-path workflows without crashing, it exhibits profound structural decay, severe state vulnerabilities, and zero defensive boundary controls.
 
-Most critically, the system has a single root diagnosis: uncontrolled state mutation caused by missing invariant checks and weak encapsulation. Stock, prices, customer details, and transaction history can all be altered directly without guard rails, enabling phantom dispensing, negative inventory, and silent record corruption. In a healthcare setting, that means the application cannot reliably enforce patient safety, financial accuracy, or regulatory compliance.
+Most critically, **stock levels can silently drift into negative numbers**. In a licensed pharmacy, physical inventory cannot exist as a negative quantity. Negative stock implies dispensing "phantom medication" that does not exist in the dispensary drawers. This creates immediate patient health hazards, produces fraudulent sales receipts, falsifies tax records, and risks the immediate revocation of the pharmacy's operating license by national regulatory authorities (e.g., FDA / Pharmacy Council).
 
-Furthermore, Akosua is preparing to introduce **Controlled Substances** (Schedule II/III narcotics and sedatives). Dispensing controlled substances requires stringent, legally audited prescriber tracking and immutable audit trails. Attempting to bolt this requirement onto the existing brittle single-file script without an architectural overhaul would precipitate a catastrophic system failure.
+Furthermore, Akosua is preparing to introduce **Controlled Substances** (Schedule II/III narcotics and sedatives). Dispensing controlled substances requires strict, legally auditable prescriber tracking and immutable records. Attempting to add this requirement to the existing monolithic script without an architectural overhaul would lead to severe regressions.
 
-This document establishes the official diagnostic baseline and blueprints the target object-oriented architecture before any refactoring takes place.
+This document establishes the official diagnostic baseline and blueprints the target object-oriented architecture before any code changes are made.
 
 ---
 
-## Single Root Diagnosis & Risk Analysis
+## Defect Audit & Root Cause Analysis (Ranked by Risk)
 
-A professional diagnostic review should identify the primary failure mode first. In this case, the underlying problem is one diagnosis: the application violates its own state integrity by allowing direct mutation of core domain data with no validation or boundary control.
+> [!CAUTION]
+> A professional diagnostic review prioritizes problems by the **severity of financial, clinical, and regulatory risk** they pose to the business, rather than treating all code issues as cosmetic style preferences.
 
 ```
-========================================================================================
-                         SINGLE DIAGNOSIS: UNSAFE STATE MUTATION
-========================================================================================
- RANK | DIAGNOSIS / ANOMALY                                 | ROOT CAUSE                                     | BUSINESS RISK IMPACT
-------+-----------------------------------------------------+------------------------------------------------+----------------------
-  #1  | Unsafe state mutation without invariant validation | Direct field writes and raw subtraction        | CRITICAL / FATAL
-      | and encapsulation                                  | in dispense() plus public mutable state         | (Phantom dispensing,
-      |                                                     |                                               | audit corruption)
-========================================================================================
+========================================================================================================
+                                    DEFECT RISK ASSESSMENT MATRIX
+========================================================================================================
+ RANK | DEFECT / ANOMALY            | ROOT CAUSE                 | BUSINESS RISK IMPACT
+------+-----------------------------+----------------------------+--------------------------------------
+  #1  | Silent Negative Stock Drift | Total absence of invariant | CRITICAL / FATAL
+      | (e.g., 40 - 100 = -60)      | validation before mutation | (License revocation, patient safety
+      |                             | in dispense() routine      | risk, phantom billing fraud)
+------+-----------------------------+----------------------------+--------------------------------------
+  #2  | Zero Encapsulation & Direct | All entity fields declared | HIGH
+      | Field Mutability            | 'public' without setters   | (State corruption, arbitrary external
+      |                             | or boundary guards         | tampering, zero integrity guarantee)
+------+-----------------------------+----------------------------+--------------------------------------
+  #3  | Fragile "Stringly-Typed"    | Categories/types stored as | HIGH
+      | Domain Logic                | raw unvalidated Strings    | (Silent failures, branch dropouts,
+      |                             | ("OTC", "PRESCRIPTION")    | casing/typo bugs in production)
+------+-----------------------------+----------------------------+--------------------------------------
+  #4  | God Class & Violation of    | Pharmacy class acts as UI, | MEDIUM-HIGH
+      | Single Responsibility (SRP) | cashier, accountant, stock | (Fragile maintenance, high regression
+      |                             | clerk, and auditor         | risk on any logic modification)
+------+-----------------------------+----------------------------+--------------------------------------
+  #5  | Memory & Collection Leakage | Internal List references   | MEDIUM
+      | (getTransactions() breach)  | returned directly without  | (Audit log tampering, unauthorized
+      |                             | unmodifiable wrappers      | ledger wipe via .clear())
+------+-----------------------------+----------------------------+--------------------------------------
+  #6  | Unsafe Static Counters for  | Non-synchronized 'static   | MEDIUM
+      | Identity Generation         | int counter' across models | (Concurrency hazards, thread collisions,
+      |                             |                            | identity loss across JVM restarts)
+========================================================================================================
 ```
 
-### Single Diagnosis: Unsafe State Mutation Without Validation and Encapsulation
-* **Observed Behavior:** Calling `p.dispense(kofi, amoxicillin, 100, "Dr. Boateng")` when only `40` units are in stock can reduce the inventory to `-60`. The same system also allows fields like `m.stock`, `m.price`, `c.phone`, and `c.history` to be changed directly from outside the model. Any class or rogue snippet can execute `paracetamol.stock = -500;` or `kofi.history.clear();`.
-* **Root Cause:** The code performs raw subtraction without checking `qty <= m.stock` or `qty > 0`, and the domain model exposes state publicly instead of using `private` fields with validation and accessors/mutators.
-* **Business Risk:** This is the single root cause behind patient-safety failures, regulatory breaches, audit tampering, and phantom financial records. When invariant checks and encapsulation are absent, no business rule can be trusted.
+### Defect #1: Silent Negative Stock Drift (The Existential Threat)
+* **Observed Behavior:** Calling `p.dispense(kofi, amoxicillin, 100, "Dr. Boateng")` when only `40` units are in stock results in stock becoming `-60`. The system prints that 100 units were dispensed, records a financial transaction charging for 100 units, and logs to Kofi's history that he received 100 units.
+* **Root Cause:** In `Pharmacy.java` (lines 117 and 129), the code performs raw subtraction: `m.stock = m.stock - qty;`. There is no condition checking whether `qty <= m.stock`, nor whether `qty > 0`.
+* **Business Risk (Why this is the most dangerous defect):**
+  1. **Patient Safety:** A patient suffering from a severe infection leaves the counter believing their full course of antibiotics was supplied, when the physical shelf is empty.
+  2. **Regulatory & Criminal Liability:** Healthcare regulations strictly mandate inventory reconciliation. Negative counts in prescription antibiotics or controlled substances constitute gross negligence and fraudulent record-keeping, exposing Akosua to heavy fines and license revocation.
+  3. **Financial Inaccuracy:** The cash ledger records income for inventory never handed over, creating tax fraud liability and phantom revenue.
+
+### Defect #2: Total Lack of Encapsulation (Public State Exposure)
+* **Observed Behavior:** Fields like `m.stock`, `m.price`, `c.phone`, and `c.history` are declared `public`. Any class can execute `paracetamol.stock = -500;` or `ama.phone = null;` or `kofi.history.clear();`.
+* **Root Cause:** Complete absence of access modifiers (`private`) and defensive accessors/mutators.
+* **Business Risk:** Zero data integrity guarantees. No business rule can be trusted because external code can bypass all business rules at will.
 
 ### Defect #3: Stringly-Typed Domain Representations
 * **Observed Behavior:** Medicine categories are evaluated via `m.category.equals("OTC")` and `m.category.equals("PRESCRIPTION")`. Customer kinds are checked via `c.kind.equals("REGISTERED")`.
 * **Root Cause:** Representing closed categorical sets as primitive `String` literals instead of Java `enum` types.
-* **Business Risk:** A simple clerical typo (e.g. `"otc"`, `"Prescription "`, or `"REGISTERED_PATIENT"`) causes the dispensing logic to fall through all conditional branches. The medicine is neither dispensed nor priced, yet transaction records and history logs execute with corrupt or zero totals.
+* **Business Risk:** A simple clerical typo (e.g., `"otc"`, `"Prescription "`, or `"REGISTERED_PATIENT"`) causes the dispensing logic to fall through all conditional branches. The medicine is neither dispensed nor priced, yet transaction records and history logs execute with corrupt or zero totals.
 
 ### Defect #4: Monolithic Single-File God Class Architecture
 * **Observed Behavior:** All classes (`Medication`, `Customer`, `Transaction`, `Pharmacy`, `PharmacyTracker`) reside in a single 156-line file. The `Pharmacy` class performs pricing, discount calculations, inventory decrementing, string generation, and CLI console printing.
 * **Root Cause:** Failure to separate concerns between Presentation, Domain Modeling, and Orchestration.
-* **Business Risk:** Modifying how discounts work for registered customers forces developers to edit the exact same method that alters stock levels for prescription medicines. This lack of isolation is the direct cause of the team’s historical experience: *"a change to how one kind of medicine behaved quietly broke another."*
+* **Business Risk:** Modifying how discounts work for registered customers forces developers to edit the exact same method that alters stock levels for prescription medicines. This lack of isolation is the direct cause of the team's historical experience: *"a change to how one kind of medicine behaved quietly broke another."*
 
 ### Defect #5: Unbounded Reference Leakage of Audit Trails
 * **Observed Behavior:** `p.getTransactions()` directly returns the private backing list: `return transactions;`.
 * **Root Cause:** Returning direct memory references to internal mutable state rather than defensive copies or `Collections.unmodifiableList()`.
-* **Business Risk:** Any external module can call `p.getTransactions().clear()`, wiping the entire daily financial and audit history without Akosua’s knowledge.
+* **Business Risk:** Any external module can call `p.getTransactions().clear()`, wiping the entire daily financial and audit history without Akosua's knowledge.
 
 ---
 
@@ -145,83 +490,65 @@ A professional diagnostic review should identify the primary failure mode first.
 ### 1.1 Structural Sketch Analysis
 
 ```
-+---------------------------------------------------------------------------------------+
-|                               PHYSICAL PHARMACY WORKFLOW                              |
-+---------------------------------------------------------------------------------------+
-|                                                                                       |
-|  [ Customer / Patient ]                                                               |
-|        |                                                                              |
-|        | 1. Presents Request / Prescription                                           |
-|        v                                                                              |
-|  [ Cashier / Service Counter ]  <---> [ Registered Patient Ledger ]                  |
-|        |                              (Verifies phone & 5% chronic discount)          |
-|        | 2. Passes Order to Pharmacist                                                |
-|        v                                                                              |
-|  [ Dispensary Vault / Pharmacist ]                                                    |
-|        |                                                                              |
-|        +---> Checks Physical Stock In Vault (Rejects if qty > stock)                  |
-|        +---> Validates Doctor Credentials (If Prescription or Controlled)             |
-|        +---> Safely Decrements Vault Inventory                                        |
-|        |                                                                              |
-|        | 3. Emits Verified Dispense Package & Audit Ticket                            |
-|        v                                                                              |
-|  [ Pharmacy Transaction Register ] (Immutable Daily Audit Log)                        |
-|                                                                                       |
-+---------------------------------------------------------------------------------------+
++-------------------------------------------------------------------------------------------------------+
+|                                      PHYSICAL PHARMACY WORKFLOW                                       |
++-------------------------------------------------------------------------------------------------------+
+|                                                                                                       |
+|  [ Customer / Patient ]                                                                               |
+|        |                                                                                              |
+|        | 1. Presents Request / Prescription Slip                                                      |
+|        v                                                                                              |
+|  [ Cashier / Service Counter ]  <---> [ Registered Patient Ledger ]                                  |
+|        |                              (Verifies identity & applies 5% loyalty discount)               |
+|        | 2. Passes Validated Request to Pharmacist                                                    |
+|        v                                                                                              |
+|  [ Dispensary Vault / Pharmacist ]                                                                    |
+|        |                                                                                              |
+|        +---> Checks Physical Stock In Vault (Rejects if requested qty > stock)                        |
+|        +---> Validates Doctor Credentials (Mandatory for Prescription & Controlled items)             |
+|        +---> Safely & Atomically Decrements Vault Inventory                                           |
+|        |                                                                                              |
+|        | 3. Emits Verified Dispensed Package & Receipt Token                                          |
+|        v                                                                                              |
+|  [ Pharmacy Transaction Register ] (Tamper-Proof, Immutable Daily Ledger)                            |
+|                                                                                                       |
++-------------------------------------------------------------------------------------------------------+
 ```
 
 #### Plain Perspective (The Physical Dispensary Walkthrough)
-Imagine walking into Akosua's physical store on a bustling morning:
-* **The Customer** stands on the public side of the counter. Some are walk-ins purchasing headache remedies; others are registered chronic patients whose historical treatment profiles and contact details are retained in the pharmacy's filing cabinet.
-* **The Cashier Counter** acts as the receptionist and front-desk coordinator. Customers do not walk into the stockroom; they hand their request (and doctor’s prescription slip, if required) to the counter staff.
-* **The Medication Vault / Stockroom Shelves** are located securely behind the counter. Only authorized staff may pick items from the shelves. If a customer asks for 100 tablets of Amoxicillin but the shelf holds only 40, the pharmacist looks at the shelf, explains that stock is insufficient, and refuses the request. The shelf count remains at 40; it never becomes negative.
+Imagine walking into Akosua's pharmacy during morning hours:
+* **The Customer** stands on the public side of the counter. Some are walk-ins buying headache remedies; others are registered chronic patients whose historical treatment profiles and contact details are kept in the pharmacy's filing cabinet.
+* **The Cashier Counter** acts as the receptionist and front-desk coordinator. Customers do not walk into the stockroom; they hand their request (and doctor's prescription slip, if required) to the counter staff.
+* **The Medication Vault / Stockroom Shelves** are located securely behind the counter. Only authorized staff may pick items from the shelves. If a customer asks for 100 tablets of Amoxicillin but the shelf holds only 40, the pharmacist explains that stock is insufficient and refuses the request. The shelf count remains at 40; it never becomes negative.
 * **The Pharmacy Register / Audit Book** is a bound, tamper-proof paper ledger kept under lock and key. Every successful transaction is written down in ink. Nobody is permitted to rip pages out of this book.
 
 #### Technical Perspective (UML Specifications, Java Contracts & Relationships)
 The physical components map directly into a formal Object-Oriented domain model comprising five core structural entities:
 
-```
-+-----------------------------------------------------------------------------+
-|                                 DOMAIN MODEL                                |
-+-----------------------------------------------------------------------------+
-|                                                                             |
-|      +-------------------+ 1       * +-------------------+                  |
-|      |     Pharmacy      |---------->|    Medication     |                  |
-|      +-------------------+           +-------------------+                  |
-|        | 1            | 1                                                   |
-|        |              |                                                     |
-|        v *            v *                                                   |
-|  +------------+  +---------------+                                          |
-|  |  Customer  |  |  Transaction  |                                          |
-|  +------------+  +---------------+                                          |
-|                                                                             |
-+-----------------------------------------------------------------------------+
-```
-
-1. **`Pharmacy` (The Root Aggregate & Domain Service):**
+1. **`Pharmacy` (Root Aggregate & Domain Service):**
    * **Role:** Acts as the aggregate root and domain boundary coordinator.
-   * **Relationship:** Holds a **Composition / Aggregation** relationship:
-     - `List<Medication> meds` (1 to many): The pharmacy owns its inventory catalog.
-     - `List<Customer> customers` (1 to many): Maintains client identity mappings.
-     - `List<Transaction> transactions` (1 to many): Manages the internal immutable audit record.
+   * **Relationships:**
+     - `List<Medication> meds` (1 to many aggregation): The pharmacy owns its inventory catalog.
+     - `List<Customer> customers` (1 to many aggregation): Maintains client identity mappings.
+     - `List<Transaction> transactions` (1 to many composition): Manages the internal immutable audit record.
 2. **`Medication` (Domain Entity):**
    * **Role:** Manages discrete pharmaceutical inventory, pricing, categorization, and atomic stock mutations.
-   * **Relationship:** Associated with `Pharmacy` and referenced by `Transaction`.
+   * **Relationships:** Owned by `Pharmacy`; referenced by `Transaction`.
 3. **`Customer` (Domain Entity):**
    * **Role:** Encapsulates patron identity, category (`WALK_IN` vs `REGISTERED`), verified contact details, and dispensing history.
-   * **Relationship:** Associated with `Pharmacy` and linked to `Transaction`.
+   * **Relationships:** Owned by `Pharmacy`; referenced in `Transaction`.
 4. **`Transaction` (Immutable Value Object / Domain Audit Event):**
    * **Role:** Represents an unalterable point-in-time record of an inventory movement (`DISPENSE` or `RESTOCK`), detailing financial totals, quantities, and customer identifiers.
-   * **Relationship:** Composed inside `Pharmacy`; references snapshot data of `Customer` and `Medication`.
+   * **Relationships:** Composed inside `Pharmacy`; stores snapshot data.
 5. **`PharmacyTracker` (Presentation / Application Entry Point):**
    * **Role:** Contains `public static void main(String[] args)`. Handles system bootstrap, environment configuration, command dispatch, and CLI reporting.
 
 ---
 
-### 1.2 System Rules & Constraints
+### 1.2 System Rules & Technical Constraints
 
 #### Functional Requirements (Plain Language Business Rules)
-1. **Rule of Positive Inventory:** A pharmacy cannot sell pills it does not possess. Under no circumstances may stock decrease below zero. If an order exceeds available stock, the transaction must halt, stock must remain unchanged, and the customer must be notified.
+1. **Rule of Positive Inventory:** A pharmacy cannot sell pills it does not have. Under no circumstances may stock decrease below zero. If an order exceeds available stock, the transaction must halt, stock must remain unchanged, and the customer must be notified.
 2. **Rule of Prescription Validation:** Any medication classified as `PRESCRIPTION` (or `CONTROLLED`) requires a named, verified prescriber (e.g., `"Dr. Boateng"`). Without an authorized prescriber, dispensing is prohibited.
 3. **Rule of Registered Patron Loyalty:** Customers flagged as `REGISTERED` receive an automatic 5% price reduction on all purchases.
 4. **Rule of Restocking Integrity:** Restocking must specify a strictly positive integer quantity (`qty > 0`). You cannot restock zero or negative quantities.
@@ -243,7 +570,7 @@ $$q > \text{stock}(m) \implies \text{Invariant Violation} \longrightarrow \text{
   - `Transaction` instances must be structurally immutable once constructed on the JVM heap. Their fields must be marked `final`.
   - The transaction ledger inside `Pharmacy` must only expose unmodifiable views via `Collections.unmodifiableList()`.
 * **JVM Heap & State Management:**
-  - When an object reference is passed to `p.dispense(c, m, qty, prescriber)`, the JVM passes references by value. Because `Medication` is a mutable entity residing on the heap, direct mutations (`m.stock -= qty`) immediately alter the single shared object across the entire runtime. Guard clauses must precede any assignment operation to ensure heap consistency before references reflect mutated state.
+  - When an object reference is passed to `p.dispense(c, m, qty, prescriber)`, the JVM passes references by value. Because `Medication` is a mutable entity on the heap, direct mutations (`m.stock -= qty`) immediately alter the single shared object across the runtime. Guard clauses must precede any assignment operation to ensure heap consistency.
 
 ---
 
@@ -251,39 +578,16 @@ $$q > \text{stock}(m) \implies \text{Invariant Violation} \longrightarrow \text{
 
 ### 2.1 The "Security Guard" & Vault Analogy (Encapsulation)
 
-```
-========================================================================================
-                         THE VAULT & SECURITY GUARD METAPHOR
-========================================================================================
-
-  UNSAFE (STARTER CODE)                   SAFE ENCAPSULATION (TARGET ARCHITECTURE)
-  ---------------------                   ----------------------------------------
-  Customer walks directly into the        Customer stands at security counter.
-  dispensary backroom, grabs 100 boxes    Customer makes a formal request.
-  from a shelf holding only 40 boxes,     The Pharmacist (Security Guard) validates
-  and leaves shelf with -60 boxes.        rules, checks physical stock, and only
-                                          hands over valid quantities.
-
-  [Caller]                                [Caller]
-     |                                       |
-     | Direct write:                         | Invokes method:
-     v                                       v
-  [paracetamol.stock = -60]               [paracetamol.reduceStock(100)]
-  (State Corrupted Instantly)                |
-                                             v
-                                          [Guard: qty <= stock ?]
-                                             |
-                                             +-- No  --> Throw InsufficientStockException!
-                                             +-- Yes --> stock = stock - qty;
-```
+> [!NOTE]
+> **Real-World Metaphor:** Encapsulation is the physical security counter and locked vault door in a dispensary. Customers cannot step behind the counter to take medicine; they must submit a request to the licensed pharmacist (the gateway), who checks the shelf and validates prescriptions before dispensing.
 
 #### Plain Perspective
-Imagine a pharmacy where there is no counter, no glass partition, and no pharmacist guarding the medicines. Any customer, delivery driver, or passerby can stroll into the back room, open drawers, alter stock labels with a pencil, or pocket medicine bottles. If someone grabs 100 boxes when only 40 are on the shelf, the drawer magically displays a sticky note saying "-60 boxes." This is exactly what the starter codebase permits.
+Imagine a pharmacy where there is no counter, no glass partition, and no pharmacist guarding the medicines. Any customer or delivery driver can walk into the back room, open drawers, alter stock labels with a pencil, or pocket medicine bottles. If someone grabs 100 boxes when only 40 are on the shelf, the drawer is left with a note saying "-60 boxes." This is what the starter codebase permits.
 
-Encapsulation is the installation of a physical counter, a locked steel door, and a licensed pharmacist who acts as the security guard. The customer cannot touch the shelves. They must approach the counter and ask: *"Please give me 100 boxes."* The pharmacist checks the shelf, sees there are only 40, and firmly responds: *"I cannot fulfill this request because we only have 40 in stock."* The vault remains secure, and the count never drops below zero.
+Encapsulation installs a physical counter, a locked steel door, and a licensed pharmacist who acts as the security guard. The customer cannot touch the shelves. They must approach the counter and ask: *"Please give me 100 boxes."* The pharmacist checks the shelf, sees there are only 40, and responds: *"I cannot fulfill this request because we only have 40 in stock."* The vault remains secure, and the count never drops below zero.
 
 #### Technical Perspective
-In Java, fields declared with the `public` access modifier expose internal memory addresses directly to any caller within the JVM.
+In Java, fields declared `public` expose internal memory addresses directly to any caller in the JVM.
 
 **Mathematical Proof of State Corruption via Direct Mutation:**
 Let the state space of `Medication` be defined by the tuple:
@@ -293,7 +597,7 @@ $$S = \langle \text{id} \in \mathbb{N}, \text{name} \in \text{String}, \text{pri
 Where $\mathbb{N}_0 = \{0, 1, 2, 3, \dots\}$. When fields are `public`:
 
 ```java
-// Starters Code: Direct field access
+// STARTER CODE ANTI-PATTERN: Direct public field access
 public class Medication {
     public int stock; // Can be assigned ANY 32-bit signed integer [-2^31 to 2^31 - 1]
 }
@@ -307,22 +611,21 @@ Because $\text{TypeSpace}(\text{int}) \supset \mathbb{N}_0$, without validation 
 
 $$\text{stock} \leftarrow v \quad \text{where} \quad v < 0$$
 
-transitions the object from a valid state $S_{\text{valid}}$ into an illegal, corrupt state $S_{\text{corrupt}}$. In the starter code, lines 117 and 129:
+transitions the object from a valid state $S_{\text{valid}}$ into a corrupted state $S_{\text{corrupt}}$. In the starter code, lines 117 and 129:
 
 ```java
 m.stock = m.stock - qty; // When m.stock = 40 and qty = 100 -> m.stock becomes -60
 ```
 
-This violates the fundamental class invariant.
-
 **The Encapsulation Solution (Access Modifiers & Method Gateways):**
 To eliminate state corruption:
-1. Demote all fields to `private`. Direct external write access (`med.stock = -10`) is rejected at compile time by the Java compiler (`javac`).
+1. Demote all fields to `private`. Direct external write access (`med.stock = -10`) is rejected at compile time by `javac`.
 2. Implement controlled mutator gateways (`reduceStock(int qty)` and `increaseStock(int qty)`) equipped with strict guard conditions:
 
 ```java
 public class Medication {
-    private String name;
+    private final int id;
+    private final String name;
     private double price;
     private int stock;
     private Category category;
@@ -359,44 +662,21 @@ By placing the subtraction logic exclusively inside `reduceStock`, the class enf
 ### 2.2 System Decoupling & Role Division (Separation of Concerns)
 
 #### Plain Perspective
-In a well-run pharmacy, the cashier operating the cash register does not formulate compounds, count pills in the back dispensary, or determine medical prescription validity. If the cashier were also responsible for compounding sterile liquids and managing chemical inventories simultaneously while taking money from customers, errors would be frequent and disastrous.
+In a well-run pharmacy, the cashier operating the cash register does not formulate compounds, count pills in the back dispensary, or evaluate prescription validity. If the cashier were responsible for compounding liquids and managing chemical inventories while taking money from customers, errors would be frequent and dangerous.
 
-Separation of Concerns means every person has a distinct, well-defined job:
+Separation of Concerns means every role has a distinct, well-defined job:
 * **The Front-of-House Cashier (`PharmacyTracker`):** Welcomes customers, takes their spoken order, prints the receipt, and formats the output text on the display.
 * **The Pharmacist / Dispensary Manager (`Pharmacy`):** Orchestrates transactions, verifies whether a doctor's signature is valid, and matches customer records.
 * **The Medication Inventory (`Medication`):** Knows its own identity, unit price, and physical quantity on the shelf, and knows how to safely add or remove pills.
 
 #### Technical Perspective
-The starter code severely violates the **Single Responsibility Principle (SRP)**. The `Pharmacy` class is a "God Class" that performs:
+The starter code violates the **Single Responsibility Principle (SRP)**. The `Pharmacy` class is a "God Class" that performs:
 1. Input parsing and order routing.
 2. Discount business logic (`if (c.kind.equals("REGISTERED")) total = total * 0.95;`).
 3. Prescription policy enforcement (`if (prescriber == null) ...`).
 4. Direct mutation of external entity fields (`m.stock = m.stock - qty;`).
 5. Customer record mutation (`c.history.add(...)`).
 6. Console presentation and string formatting (`System.out.println(...)`).
-
-**Decoupled Architectural Layering:**
-
-```
-+-----------------------------------------------------------------------------+
-|                            ARCHITECTURAL LAYERS                             |
-+-----------------------------------------------------------------------------+
-|                                                                             |
-|  [ PRESENTATION LAYER ]                                                     |
-|  - PharmacyTracker (Main, CLI Console Output, formatting strings)           |
-|         |                                                                   |
-|         v                                                                   |
-|  [ DOMAIN SERVICE / ORCHESTRATION LAYER ]                                   |
-|  - Pharmacy (Coordinates workflow, manages collections, audits txs)         |
-|         |                                                                   |
-|         v                                                                   |
-|  [ DOMAIN MODEL LAYER ]                                                     |
-|  - Medication (Encapsulates price, stock invariants, category)              |
-|  - Customer (Encapsulates history, contact details, membership tier)        |
-|  - Transaction (Immutable snapshot of historical event)                     |
-|                                                                             |
-+-----------------------------------------------------------------------------+
-```
 
 By decoupling these responsibilities:
 * Changing the presentation format (e.g., migrating from CLI `System.out.println` to a GUI or REST API) requires **zero changes** to `Medication` or `Pharmacy`.
@@ -410,62 +690,64 @@ By decoupling these responsibilities:
 ### 3.1 Eliminating Duplicate Work (Inheritance & DRY)
 
 ```
-========================================================================================
-                          PRODUCT CLASS HIERARCHY (DRY & OCP)
-========================================================================================
+========================================================================================================
+                                    PRODUCT CLASS HIERARCHY (DRY & OCP)
+========================================================================================================
 
-                                  +-----------------------+
-                                  |        Product        |  (Abstract Superclass)
-                                  +-----------------------+
-                                  | # id: int             |
-                                  | # name: String        |
-                                  | # price: double       |
-                                  | # stock: int          |
-                                  +-----------------------+
-                                  | + reduceStock(qty)    |
-                                  | + increaseStock(qty)  |
-                                  | + getPrice(): double  |
-                                  | + isDispenseAllowed() |  (abstract)
-                                  +-----------+-----------+
-                                              |
-                     +------------------------+------------------------+
-                     |                                                 |
-         +-----------v-----------+                         +-----------v-----------+
-         |     OtcProduct        |                         |  PrescriptionProduct  |
-         +-----------------------+                         +-----------------------+
-         | (No prescriber needed)|                         | - requiresPrescription|
-         +-----------------------+                         +-----------------------+
-         | + isDispenseAllowed() |                         | + isDispenseAllowed() |
-         +-----------------------+                         +-----------+-----------+
-                                                                       |
-                                                           +-----------v-----------+
-                                                           |  ControlledSubstance  |
-                                                           +-----------------------+
-                                                           | - deaSchedule: String |
-                                                           | - prescriberLicense   |
-                                                           +-----------------------+
-                                                           | + isDispenseAllowed() |
-                                                           +-----------------------+
+                                  +-------------------------------+
+                                  |            Product            |  (Abstract Superclass)
+                                  +-------------------------------+
+                                  | # id: int                     |
+                                  | # name: String                |
+                                  | # price: double               |
+                                  | # stock: int                  |
+                                  +-------------------------------+
+                                  | + reduceStock(qty: int): void |
+                                  | + increaseStock(qty: int):void|
+                                  | + getPrice(): double          |
+                                  | + requiresPrescriber(): bool  |  (abstract)
+                                  +---------------+---------------+
+                                                  |
+                         +------------------------+------------------------+
+                         |                                                 |
+             +-----------v-----------+                         +-----------v-----------+
+             |      OtcProduct       |                         |  PrescriptionProduct  |
+             +-----------------------+                         +-----------------------+
+             | (No prescriber needed)|                         | - requiresPrescription|
+             +-----------------------+                         +-----------------------+
+             | + requiresPrescriber()|                         | + requiresPrescriber()|
+             |   returns false       |                         |   returns true        |
+             +-----------------------+                         +-----------+-----------+
+                                                                           |
+                                                               +-----------v-----------+
+                                                               |  ControlledSubstance  |
+                                                               +-----------------------+
+                                                               | - deaSchedule: String |
+                                                               | - prescriberLicense   |
+                                                               +-----------------------+
+                                                               | + requiresPrescriber()|
+                                                               |   returns true        |
+                                                               +-----------------------+
 ```
 
 #### Plain Perspective
-Consider a retail pharmacy’s inventory. The pharmacy sells hundreds of products: bottles of Cough Syrup, packets of Paracetamol tablets, boxes of gauze bandages, and bottles of Amoxicillin. 
+A retail pharmacy sells hundreds of items: Cough Syrup, Paracetamol tablets, bandages, and Amoxicillin.
 
-Every single item in the store shares identical foundational traits:
+Every item in the store shares common traits:
 * It has an item ID.
 * It has a brand or generic name.
 * It has a retail price in Ghana Cedis (GHS).
-* It has a quantity sitting on a shelf.
+* It has a quantity on a shelf.
 * It needs to be restocked when depleted.
 
-Without an organized catalog hierarchy, Akosua would need separate inventory tracking cards for syrups, separate cards for tablets, and separate cards for medical devices, re-writing the exact same rules for pricing, restocking, and counting on every card.
+Without an organized catalog hierarchy, Akosua would need separate inventory cards for syrups, separate cards for tablets, and separate cards for bandages, writing out the exact same rules for pricing, restocking, and counting on every card.
 
-With **Inheritance**, we create a single master blueprint called `Product`. Tablets, syrups, and bandages simply inherit all the common rules from `Product` and only describe what makes them unique (such as pill milligram dosage for tablets, or bottle liquid volume in milliliters for syrups).
+With **Inheritance**, we create a single master blueprint called `Product`. Tablets, syrups, and bandages inherit all common rules from `Product` and only describe what makes them unique (such as milligram dosage for tablets, or liquid volume in milliliters for syrups).
 
 #### Technical Perspective
 The **Don't Repeat Yourself (DRY)** principle states that every piece of knowledge must have a single, unambiguous representation within a system.
 
-In Java, this is achieved via class inheritance (`abstract class Product` extended by specialized subclasses).
+In Java, this is achieved via class inheritance (`abstract class Product` extended by specialized subclasses). Specialized subclasses inherit all stock management mechanics without duplicating code:
 
 ```java
 public abstract class Product {
@@ -498,45 +780,17 @@ public abstract class Product {
         this.stock += qty;
     }
 
-    // Common accessors
     public int getId() { return id; }
     public String getName() { return name; }
     public double getPrice() { return price; }
     public int getStock() { return stock; }
 
-    // Domain contract enforced across all products
     public abstract boolean requiresPrescriber();
 }
 ```
 
-Specialized subclasses inherit all stock management mechanics for free:
-
-```java
-public class OtcProduct extends Product {
-    public OtcProduct(int id, String name, double price, int stock) {
-        super(id, name, price, stock);
-    }
-
-    @Override
-    public boolean requiresPrescriber() {
-        return false;
-    }
-}
-
-public class PrescriptionProduct extends Product {
-    public PrescriptionProduct(int id, String name, double price, int stock) {
-        super(id, name, price, stock);
-    }
-
-    @Override
-    public boolean requiresPrescriber() {
-        return true;
-    }
-}
-```
-
 ### 3.2 Polymorphism & Dynamic Dispatch Mechanics
-At runtime on the JVM, when `p.dispense(customer, product, qty, prescriber)` executes, the calling code does not need to execute messy `if/else` checks against string tags:
+At runtime on the JVM, when `p.dispense(customer, product, qty, prescriber)` executes, the calling code avoids fragile `if/else` checks against string tags:
 
 ```java
 // STARTER CODE (BRITTLE ANTI-PATTERN):
@@ -549,7 +803,7 @@ if (product.requiresPrescriber() && (prescriber == null || prescriber.isBlank())
 }
 ```
 
-Under JVM execution, **Dynamic Method Lookup (vtable dispatch)** invokes the overridden implementation of `requiresPrescriber()` belonging to the actual instance on the heap (`OtcProduct` vs `PrescriptionProduct`). Adding a third product category (e.g. `ControlledSubstanceProduct`) requires zero modifications to existing classes!
+Under JVM execution, **Dynamic Method Lookup (vtable dispatch)** invokes the overridden implementation of `requiresPrescriber()` belonging to the actual instance on the heap (`OtcProduct` vs `PrescriptionProduct`). Adding a third product category (e.g., `ControlledSubstanceProduct`) requires zero modifications to existing classes.
 
 ---
 
@@ -557,50 +811,23 @@ Under JVM execution, **Dynamic Method Lookup (vtable dispatch)** invokes the ove
 
 ### 4.1 Safe Failure Responses & Invariant Guards
 
-```
-========================================================================================
-                          ERROR HANDLING EXECUTION MATRIX
-========================================================================================
-
-  ATTEMPTED OPERATION: Dispense 100 Amoxicillin (Available Stock: 40)
-  
-  [STARTER CODE EXECUTION FLOW]
-  Call: dispense(100) 
-    ---> Stock computed: 40 - 100 = -60
-    ---> Database/Ledger updated with -60
-    ---> Customer charged for 100 units
-    ---> Status: SILENT DATA CORRUPTION (Disaster)
-
-  [TARGET EXCEPTION ARCHITECTURE]
-  Call: dispense(100)
-    ---> Medication.reduceStock(100)
-    ---> Invariant Check: (100 > 40) -> FAIL!
-    ---> Throws: InsufficientStockException("Insufficient stock: 40 available")
-    ---> Transaction aborted immediately; Stock remains 40
-    ---> Caught at Service/UI Boundary: "Dispense failed: Insufficient stock."
-    ---> Status: ATOMIC ROLLBACK / DETERMINISTIC INTEGRITY (Safe)
-```
-
 #### Plain Perspective
-What happens in a real pharmacy when a customer asks for 100 packets of amoxicillin, but there are only 40 packets on the shelf?
-* In the **broken starter code**, the clerk pretends all 100 exist, hands over an imaginary bag, takes cash for 100, and writes down in the ledger that the shelf now holds negative 60 boxes.
-* In the **real world**, the pharmacist checks the shelf, stops the transaction, and says: *"I am sorry, we only have 40 packets in stock today. I cannot dispense 100."* The customer is not charged for 100, the shelf count remains at 40, and the ledger records no illegal activity.
+What happens in a real pharmacy when a customer asks for 100 packets of amoxicillin, but only 40 are on the shelf?
+* In the **broken starter code**, the clerk pretends all 100 exist, hands over an empty bag, takes cash for 100, and writes in the ledger that the shelf now holds negative 60 boxes.
+* In the **real world**, the pharmacist checks the shelf, halts the transaction, and explains: *"I am sorry, we only have 40 packets in stock today. I cannot dispense 100."* The customer is not charged for 100, the shelf count remains at 40, and the ledger records no invalid activity.
 
 #### Technical Perspective: Boolean Status Flags vs. Custom Exception Architecture
-Two software strategies exist for handling invalid requests:
 
 | Comparison Metric | Boolean Return Flags (`boolean success`) | Custom Domain Exception Architecture |
 | :--- | :--- | :--- |
-| **Mechanic** | Methods return `true` on success, `false` on failure. | Method executes atomically or throws typed Exception. |
-| **Caller Enforcement** | **Optional.** Callers can ignore return values: `p.dispense(...)` without checking `if (!success)`. | **Mandatory.** An uncaught exception halts thread execution, preventing subsequent corrupted logic. |
-| **Error Diagnostics** | Returns only a binary bit; cannot convey *why* it failed (lack of stock vs. missing doctor). | Rich diagnostic context (e.g. `availableStock`, `requestedQty`, `medicationName`). |
-| **Transaction Atomicity**| Caller must manually write rollback logic if later steps fail. | Throwing an exception unwinds the stack cleanly before any side-effect or transaction commit occurs. |
+| **Execution Mechanic** | Methods return `true` on success, `false` on failure. | Method executes atomically or throws typed Exception. |
+| **Caller Enforcement** | **Optional.** Callers can ignore return values: `p.dispense(...)` without checking `if (!success)`. | **Mandatory.** An uncaught exception halts thread execution, preventing corrupted downstream operations. |
+| **Error Diagnostics** | Returns only a binary bit; cannot convey *why* it failed (lack of stock vs. missing doctor). | Rich diagnostic context (e.g., `availableStock`, `requestedQty`, `medicationName`). |
+| **Transaction Atomicity**| Caller must manually write rollback logic if subsequent steps fail. | Throwing an exception unwinds the stack cleanly before any side-effect or transaction commit occurs. |
 
 **Custom Exception Architecture Definition:**
-The architecture establishes clear, strongly-typed domain exceptions extending `RuntimeException` or checked `Exception`:
 
 ```java
-// Domain Exception Hierarchy
 public class PharmacyDomainException extends RuntimeException {
     public PharmacyDomainException(String message) {
         super(message);
@@ -638,39 +865,7 @@ Domain models (`Medication`, `Customer`) and Domain Services (`Pharmacy`) **thro
 
 ### 5.1 Step-by-Step Execution Trace
 
-Below is the definitive end-to-end execution trace for an order: `p.dispense(ama, amoxicillin, 10, "Dr. Boateng")`.
-
-```
-========================================================================================
-                          END-TO-END EXECUTION SEQUENCE
-========================================================================================
-
-[UI / Tracker]              [Pharmacy]             [Amoxicillin]         [Customer / Ama]
-      |                          |                       |                      |
-      | 1. dispense(...)         |                       |                      |
-      |------------------------->|                       |                      |
-      |                          | 2. Check Prescriber   |                      |
-      |                          |    (Valid: Dr.Boateng)|                      |
-      |                          |                       |                      |
-      |                          | 3. reduceStock(10)    |                      |
-      |                          |---------------------->|                      |
-      |                          |                       | (Validates: 10 <= 40)|
-      |                          |                       | [stock: 40 -> 30]    |
-      |                          |<----------------------|                      |
-      |                          |    return OK          |                      |
-      |                          |                                              |
-      |                          | 4. Compute Price (Registered: 5% discount)   |
-      |                          |                                              |
-      |                          | 5. addHistory("Got 10 x Amoxicillin 250mg")  |
-      |                          |--------------------------------------------->|
-      |                          |                                              |
-      |                          | 6. Record Immutable Transaction              |
-      |                          |    transactions.add(new Transaction(...))    |
-      |                          |                                              |
-      |<-------------------------|                                              |
-      | 7. Print Dispensed Line  |                                              |
-      |    to stdout             |                                              |
-```
+Execution timeline for an order: `p.dispense(ama, amoxicillin, 10, "Dr. Boateng")`.
 
 #### Detailed Call Path & Heap State Walkthrough:
 1. **Entry Point Trigger:**
@@ -742,25 +937,24 @@ Developers rebuilding the codebase must complete and verify each item sequential
 
 ## Section 6: Extensibility Analysis: The Controlled Substances Milestone
 
-Akosua explicitly noted that the pharmacy will soon stock **Controlled Substances** (e.g., Morphine, Diazepam), which require strict recording of both the prescriber and their medical license/DEA registration number before any pill is dispensed.
+Akosua noted that the pharmacy will soon stock **Controlled Substances** (e.g., Morphine, Diazepam), which require recording both the prescriber and their medical license number before any medication is dispensed.
 
 ### The Cost of Legacy Architecture vs. The Clean Rebuild
 
 ```
-========================================================================================
-                   IMPACT MATRIX: ADDING CONTROLLED SUBSTANCES
-========================================================================================
-
+========================================================================================================
+                               IMPACT MATRIX: ADDING CONTROLLED SUBSTANCES
+========================================================================================================
 ARCHITECTURAL MODEL    | FILES TOUCHED | RISK OF REGRESSION | OCP COMPLIANCE
------------------------+---------------+--------------------+--------------------------
+-----------------------+---------------+--------------------+-------------------------------------------
 Legacy Single-File     | 1 file        | EXTREME            | VIOLATED
-Starter Architecture   | (Massive edit | (Editing one       | (Must modify core
-                       | to Pharmacy)  | branch breaks OTC) | dispense() if-else trees)
------------------------+---------------+--------------------+--------------------------
+Starter Architecture   | (Massive edit | (Editing one       | (Must modify core dispense() if-else trees;
+                       | to Pharmacy)  | branch breaks OTC) | introduces ripple regressions across all types)
+-----------------------+---------------+--------------------+-------------------------------------------
 Target Rebuilt         | 0 existing    | ZERO REGRESSION    | FULLY SATISFIED
-Object-Oriented Design | core classes  | (Existing OTC & Rx | (Open for extension,
-                       | modified      | classes untouched) | closed for modification)
-========================================================================================
+Object-Oriented Design | core classes  | (Existing OTC & Rx | (Open for extension, closed for modification;
+                       | modified      | classes untouched) | new subclass added cleanly)
+========================================================================================================
 ```
 
 #### What the Old Version Would Have Forced Us to Touch:
@@ -772,7 +966,7 @@ Object-Oriented Design | core classes  | (Existing OTC & Rx | (Open for extensio
    - Re-test all OTC and standard prescription flows because any syntax error or logic slip inside the shared method breaks Paracetamol and Amoxicillin.
 
 #### How the Target Structure Accommodates the Change Cleanly:
-Under the **Open/Closed Principle (OCP)** (classes should be open for extension, but closed for modification):
+Under the **Open/Closed Principle (OCP)**:
 1. Create a new subclass `ControlledMedication extends Medication` (or implement a category strategy).
 2. Override `validateDispense(Customer c, int qty, DispenseContext ctx)` to enforce medical license number verification.
 3. **Not a single line of code in `Medication.java` or `OtcProduct.java` is modified.** The existing OTC and prescription pathways remain completely isolated and regression-free.
@@ -783,10 +977,10 @@ Under the **Open/Closed Principle (OCP)** (classes should be open for extension,
 
 ### Deliverable Improvement: Defensive Immutability & Tamper-Proof Audit Vault
 
-To deliver tangible business value beyond the minimum requirements of the brief, the rebuilt architecture incorporates **Defensive Immutability and Unmodifiable Ledger Protection**.
+To deliver business value beyond the minimum requirements of the brief, the rebuilt architecture incorporates **Defensive Immutability and Unmodifiable Ledger Protection**.
 
-#### Why this Matters to Akosua’s Business:
-In a community pharmacy, transaction records are not merely temporary log strings for the console; they constitute the **legal and fiscal register** required by healthcare inspectors, tax authorities, and narcotics control boards.
+#### Why this Matters to Akosua's Business:
+In a community pharmacy, transaction records are not temporary log strings for the console; they constitute the **legal and fiscal register** required by healthcare inspectors, tax authorities, and narcotics control boards.
 
 In the starter codebase, line 144 reads:
 ```java
@@ -794,11 +988,11 @@ public List<Transaction> getTransactions() {
     return transactions; // Hands raw mutable reference back!
 }
 ```
-Any developer, junior staff script, or third-party reporting plugin can execute:
+Any caller can execute:
 ```java
 p.getTransactions().clear(); // Wipes entire pharmacy fiscal and dispense history!
 ```
-Or maliciously substitute transactions:
+Or maliciously alter records:
 ```java
 p.getTransactions().get(0).total = 0.0; // Falsifies revenue records
 ```
@@ -813,7 +1007,7 @@ p.getTransactions().get(0).total = 0.0; // Falsifies revenue records
        return Collections.unmodifiableList(this.transactions);
    }
    ```
-   If any external caller attempts to call `.clear()`, `.remove()`, or `.add()` on the returned list, the JVM immediately raises an `UnsupportedOperationException`, preserving the permanent integrity of Akosua's pharmacy records.
+   If any external caller attempts to call `.clear()`, `.remove()`, or `.add()` on the returned list, the JVM raises an `UnsupportedOperationException`, preserving the permanent integrity of Akosua's pharmacy records.
 
 ---
-*End of Diagnostic Specification: `diagnoses.md`*
+*End of Diagnostic Specification: `DIAGNOSIS.md`*
