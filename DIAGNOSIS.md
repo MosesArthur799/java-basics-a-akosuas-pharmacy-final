@@ -25,66 +25,6 @@
 
 ### Target Architecture Schematic (Class Blueprint)
 
-```
-========================================================================================================
-                                 TARGET ARCHITECTURAL CLASS BLUEPRINT
-========================================================================================================
-
-                 +-------------------------------------------------------------+
-                 |                       PharmacyTracker                       |
-                 |-------------------------------------------------------------|
-                 | + main(args: String[]): void                                |
-                 +------------------------------+------------------------------+
-                                                |
-                                                | (bootstraps & orchestrates)
-                                                v
-                 +-------------------------------------------------------------+
-                 |                          Pharmacy                           |
-                 |-------------------------------------------------------------|
-                 | - name: String                                              |
-                 | - meds: List<Medication>                                    |
-                 | - customers: List<Customer>                                 |
-                 | - transactions: List<Transaction>                           |
-                 |-------------------------------------------------------------|
-                 | + dispense(c: Customer, m: Medication, qty: int, doc: String)|
-                 | + restock(m: Medication, qty: int): void                    |
-                 | + printReport(): void                                       |
-                 | + getTransactions(): List<Transaction>                      |
-                 +--------------+-------------------------------+--------------+
-                                |                               |
-               +----------------+                               +----------------+
-               |                                                                 |
-               v                                                                 v
-+---------------------------------------------+   +---------------------------------------------+
-|                 Medication                  |   |                 Transaction                 |
-|---------------------------------------------|   |---------------------------------------------|
-| - id: int                                   |   | - id: int                                   |
-| - name: String                              |   | - customerName: String                      |
-| - price: double                             |   | - medName: String                           |
-| - stock: int                                |   | - qty: int                                  |
-| - category: Category                        |   | - total: double                             |
-|---------------------------------------------|   | - type: TxType                              |
-| + reduceStock(qty: int): void               |   |---------------------------------------------|
-| + increaseStock(qty: int): void             |   | + getCustomerName(): String                 |
-| + getStock(): int                           |   | + getTotal(): double                        |
-| + getPrice(): double                        |   | + getMedName(): String                      |
-+---------------------------------------------+   +---------------------------------------------+
-                       ^
-                       |
-+---------------------------------------------+
-|                  Customer                   |
-|---------------------------------------------|
-| - id: int                                   |
-| - name: String                              |
-| - kind: CustomerType                        |
-| - phone: String                             |
-| - history: List<String>                     |
-|---------------------------------------------|
-| + setPhone(phone: String): void             |
-| + addHistory(entry: String): void           |
-| + getHistory(): List<String>                |
-+---------------------------------------------+
-```
 
 ### Official Domain Sketch Artifact (Figure 1.0)
 
