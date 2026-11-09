@@ -42,7 +42,7 @@ java -cp "target/classes;target/test-classes" PharmacyTest
 
 ---
 
-## Behavior Preservation & Invariant Enforcement (Rubric: 20%)
+## Behavior Preservation & Invariant Enforcement
 
 The brief mandates that the application must **behave exactly like the original**, except that the non-negotiable rule that **stock counts can never drift below zero** is strictly enforced.
 
@@ -76,7 +76,7 @@ The brief mandates that the application must **behave exactly like the original*
 
 ---
 
-## Rebuilt Structure & Architectural Decoupling (Rubric: 25%)
+## Rebuilt Structure & Architectural Decoupling
 
 The rebuilt system replaces the single-file anti-pattern with cleanly encapsulated top-level domain classes:
 
@@ -99,7 +99,7 @@ src/
 
 ---
 
-## Deep-Dive Design Reasoning: Choices & Trade-Offs (Rubric: 20%)
+## Deep-Dive Design Reasoning: Choices & Trade-Offs 
 
 A key grading requirement is explaining **why specific structural approaches were chosen over plausible alternatives**, connecting each choice directly to business risk mitigation.
 
@@ -159,7 +159,7 @@ When `p.dispense(patient, morphine, 2, "Dr. Mensah")` is invoked, `Pharmacy` que
 
 ---
 
-## Improvement Beyond the Brief: Tamper-Proof Audit Vault (Rubric: 15%)
+## Improvement Beyond the Brief: Tamper-Proof Audit Vault 
 
 The rubric awards 15% for: *"Adds something that genuinely helps this business or the person who inherits the code next, with reasoning that ties back to why it matters, not a cosmetic extra."*
 
