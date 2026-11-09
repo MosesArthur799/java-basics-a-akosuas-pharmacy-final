@@ -1,12 +1,9 @@
 # Dual-Perspective Architectural Specification & Diagnostic Report: `DIAGNOSIS.md`
 
 ```
-  █████╗ ██╗  ██╗ ██████╗ ███████╗██╗   ██╗ █████╗     ██████╗ ██╗  ██╗ █████╗ ██████╗ ███╗   ███╗ █████╗  ██████╗██╗   ██╗
- ██╔══██╗██║ ██╔╝██╔═══██╗██╔════╝██║   ██║██╔══██╗    ██╔══██╗██║  ██║██╔══██╗██╔══██╗████╗ ████║██╔══██╗██╔════╝╚██╗ ██╔╝
- ███████║█████╔╝ ██║   ██║███████╗██║   ██║███████║    ██████╔╝███████║███████║██████╔╝██╔████╔██║███████║██║      ╚████╔╝ 
- ██╔══██║██╔═██╗ ██║   ██║╚════██║██║   ██║██╔══██║    ██╔═══╝ ██╔══██║██╔══██║██╔══██╗██║╚██╔╝██║██╔══██║██║       ╚██╔╝  
- ██║  ██║██║  ██╗╚██████╔╝███████║╚██████╔╝██║  ██║    ██║     ██║  ██║██║  ██║██║  ██║██║ ╚═╝ ██║██║  ██║╚██████╗   ██║   
- ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═╝    ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝   
+========================================================================================================
+                   AKOSUA'S PHARMACY — SYSTEM ARCHITECTURE & DIAGNOSTIC SPECIFICATION
+========================================================================================================
 ```
 
 ---
@@ -18,13 +15,13 @@
 | **Engineering Author** | Principal Software Architect & Lead Technical Communicator |
 | **Document Classification** | Production Architectural Specification & Comprehensive Diagnostic Baseline |
 | **Deliverable Lifecycle** | Phase 1 Pre-Rebuild Milestone (Committed strictly prior to source-code mutation) |
-| **Architectural Paradigms** | Domain-Driven Design (DDD), Hexagonal Architecture, Layered Separation of Concerns (SoC) |
+| **Architectural Paradigms** | Domain-Driven Design (DDD), Clean Object-Oriented Architecture, Layered Separation of Concerns (SoC) |
 | **Language Target** | OpenJDK 21 (LTS) |
 | **Regulatory Framework** | Pharmacy Council Standards & Controlled Substances Dispensing Compliance |
 
 ---
 
-## Executive Blueprint & Target 3D Architecture
+## Executive Blueprint & Target Architecture
 
 ### Target Architecture Schematic (Class Blueprint)
 
@@ -98,142 +95,126 @@
 
 ---
 
-## 3D Isometric Architectural Visualizations
+## 2D System Architecture Models
 
-### 1. Exploded 3D Layer Stack (Tier Separation)
-The system decouples untrusted presentation logic from domain invariants and tamper-proof storage through four distinct, vertically isolated structural tiers:
+### 1. Layered Tier Architecture (Separation of Concerns)
+The system decouples presentation logic from domain invariants and tamper-proof storage across four distinct structural tiers:
 
-```text
-                  +=======================================================+
-                 /                                                       /|
-                /         TIER 4: PRESENTATION & CLIENT GATEWAY         / |
-               /   [ PharmacyTracker CLI | Standard I/O | Formatters ] /  |
-              +=======================================================+   |
-              |                                                       |   |
-              |   +-----------------------------------------------+   |   |
-              |   | - User Command Parsing & Arguments Extraction |   |  /+
-              |   | - CLI Report Formatting & Console Renderers   |   | / /
-              |   +-----------------------------------------------+   |/ /
-              +=======================================================+ /
-                                        |  (Dispatches Order Request)
-                                        v
-                  +=======================================================+
-                 /                                                       /|
-                /      TIER 3: APPLICATION & DOMAIN ORCHESTRATION       / |
-               /   [ Pharmacy Service Aggregate | Workflow Engine ]    /  |
-              +=======================================================+   |
-              |                                                       |   |
-              |   +-----------------------------------------------+   |   |
-              |   | - Coordinates Multi-Entity Dispense Workflow  |   |  /+
-              |   | - Prescriber Credential & Rule Verification   |   | / /
-              |   +-----------------------------------------------+   |/ /
-              +=======================================================+ /
-                                        |  (Invokes Entity State Guards)
-                                        v
-                  +=======================================================+
-                 /                                                       /|
-                /         TIER 2: CORE DOMAIN INVENTORY VAULT           / |
-               /   [ Medication Entity | Customer Profile | Rules ]    /  |
-              +=======================================================+   |
-              |                                                       |   |
-              |   +-----------------------------------------------+   |   |
-              |   | - Fully Encapsulated Private Heap Memory      |   |  /+
-              |   | - Atomic Invariant Guard: reduceStock(qty)    |   | / /
-              |   +-----------------------------------------------+   |/ /
-              +=======================================================+ /
-                                        |  (Appends Unalterable Audit Snapshots)
-                                        v
-                  +=======================================================+
-                 /                                                       /|
-                /          TIER 1: TAMPER-PROOF AUDIT VAULT             / |
-               /   [ Transaction Ledger | Unmodifiable Event Store ]   /  |
-              +=======================================================+   |
-              |                                                       |   |
-              |   +-----------------------------------------------+   |   |
-              |   | - Structurally Immutable Transaction Records  |   |  /
-              |   | - Collections.unmodifiableList Defensive View |   | /
-              |   +-----------------------------------------------+   |/
-              +=======================================================+
+```
++======================================================================================================+
+|                                TIER 4: PRESENTATION & CLIENT GATEWAY                                 |
+|  - PharmacyTracker (CLI Entry Point, Console Rendering, Input Formatting)                           |
+|  - Renders human-readable receipts and audit reports to standard output                             |
++======================================================================================================+
+                                                   |
+                                                   | Dispatches User Commands
+                                                   v
++======================================================================================================+
+|                              TIER 3: APPLICATION & DOMAIN ORCHESTRATION                              |
+|  - Pharmacy Service Aggregate (Workflow Coordinator)                                                 |
+|  - Enforces Prescriber Verification, Coordinates Discounts, Orchestrates Stock Operations            |
++======================================================================================================+
+                                                   |
+                                                   | Invokes Domain Invariant Guards
+                                                   v
++======================================================================================================+
+|                                  TIER 2: CORE DOMAIN INVENTORY VAULT                                 |
+|  - Medication (Private Stock State, Encapsulated reduceStock & increaseStock Gateways)               |
+|  - Customer (Encapsulated Loyalty Tier, Phone Validation, Dispense History Profile)                  |
++======================================================================================================+
+                                                   |
+                                                   | Commits Immutable Event Snapshots
+                                                   v
++======================================================================================================+
+|                                  TIER 1: TAMPER-PROOF AUDIT VAULT                                    |
+|  - Transaction (Immutable Domain Value Object Snapshot)                                              |
+|  - Collections.unmodifiableList Defensive Ledger Wrapper (Guarantees Write-Once Immutability)        |
++======================================================================================================+
 ```
 
-### 2. 3D Isometric Dispensary Counter & Vault Security Boundary
-The physical dispensary metaphor maps directly to software encapsulation barriers, preventing external client code from directly accessing internal heap state:
+### 2. Security Perimeter & Gateway Boundary
+The physical dispensary counter maps directly to software encapsulation barriers, preventing external callers from corrupting internal heap memory:
 
-```text
-               PUBLIC ZONE                                        SECURE VAULT ZONE
-        (Untrusted Caller / Client)                           (Encapsulated Domain Heap)
-                                            
-                                         SECURITY WALL
-                                        +=============+
-                  +----------------+   /|             |\   +----------------------+
-                 /                /|  / |             | \ /                      /|
-                /    Customer    / | /  |   BARRIER   |  /      Medication      / |
-               /   [WALK-IN /   /  |/   |   COUNTER   | /       [THE VAULT]    /  |
-              +----------------+   |    |             |/   +----------------------+   |
-              | - name: String |   |    |             |    | - stock: int [PRIV]  |   |
-              | - phone: String|  /+    |  PHARMACIST |    | - price: double      |  /+
-              +----------------+ / /    |  (GATEWAY)  |    +----------------------+ / /
-                |                |/     |             |      |                      |/
-                |                /      +=============+      |                      /
-                | Makes Request         /             \      | Enforces Guard:
-                |                      /               \     | (qty <= stock)
-                v                     v                 v    v
-           "Dispense 100" ----> [ Validation ] ----> [ Atomic Mutation ] ----> Stock = 30
-                                  Check Doctor          (Rejection if qty > stock)
+```
++------------------------------------------------------------------------------------------------------+
+|                                     SECURITY PERIMETER & GATEWAY                                     |
++------------------------------------------------------------------------------------------------------+
+|                                                                                                      |
+|   PUBLIC CALLER ZONE                  GATEWAY BARRIER                     PROTECTED DOMAIN HEAP      |
+|  [ Untrusted Client ]               [ Service Boundary ]                 [ Encapsulated Vault ]      |
+|                                                                                                      |
+|   +-------------------+             +-----------------------+             +-----------------------+  |
+|   |     Customer      |             |     Pharmacy Staff    |             |      Medication       |  |
+|   |-------------------|  Requests   |      (API Gateway)    |  Validates  |-----------------------|  |
+|   | - name: String    | ----------> | - verifyPrescriber()  | ----------> | - stock: int (PRIV)   |  |
+|   | - kind: CustType  |             | - applyDiscounts()    |             | - price: double       |  |
+|   +-------------------+             +-----------------------+             +-----------------------+  |
+|                                                 |                                     |              |
+|                                                 | Intercepts Invalid Calls            | Invariant:   |
+|                                                 | (Halts before mutation)             | (qty<=stock) |
+|                                                 v                                     v              |
+|                                        [ Domain Exception ]                 [ Safe State Mutation ]  |
+|                                        (Transaction Aborted)                (Stock Safely Reduced)   |
+|                                                                                                      |
++------------------------------------------------------------------------------------------------------+
 ```
 
-### 3. 3D Isometric Domain Entity Mesh
-Relationships between domain aggregates, value objects, and entities in 3D perspective:
+### 3. Domain Entity Relationship Architecture
+The structural associations and cardinality between all domain entities:
 
-```text
-                        +--------------------------------+
-                       /                                /|
-                      /           Medication           / |
-                     /            [THE VAULT]         /  |
-                    +--------------------------------+   |
-                    | - id: int                      |   |
-                    | - name: String                 |   |
-                    | - price: double                |   |
-                    | - stock: int  <-- [PRIVATE]    |  /+
-                    | - category: Category           | / /
-                    +--------------------------------+/ /
-                    | + reduceStock(qty: int): void  | /
-                    | + increaseStock(qty: int): void|/
-                    +--------------------------------+
-                                    ^
-                                    | Controlled Invariant Invocation
-                                    |
-                        +--------------------------------+
-                       /                                /|
-                      /            Pharmacy            / |
-                     /           [DISPENSARY]         /  |
-                    +--------------------------------+   |
-                    | - name: String                 |   |
-                    | - meds: List<Medication>       |   |
-                    | - customers: List<Customer>    |  /+
-                    | - transactions: List<Tx>       | / /
-                    +--------------------------------+/ /
-                    | + dispense(c, m, qty, doc)     | /
-                    | + restock(m, qty)              |/
-                    +--------------------------------+
-                                    |
-                     +--------------+--------------+
-                     | Appends Event               | Maintains Profile
-                     v                             v
-      +--------------------------------+   +--------------------------------+
-     /                                /|  /                                /|
-    /          Transaction           / | /            Customer            / |
-   /       [IMMUTABLE AUDIT]       /  | /           [PATIENT FILE]       /  |
-  +--------------------------------+   |+--------------------------------+   |
-  | - id: int                      |   || - id: int                      |   |
-  | - customerName: String         |   || - name: String                 |   |
-  | - medName: String              |  /+ | - kind: CustomerType           |  /+
-  | - qty: int | total: double     | / / | - phone: String               | / /
-  | - type: TxType                 |/ /  | - history: List<String>       |/ /
-  +--------------------------------+/ /  +--------------------------------+/ /
-  | (READONLY VALUE OBJECT)        | /   | + setPhone(phone: String)     | /
-  +--------------------------------+/    | + addHistory(entry: String)   |/
-                                         +--------------------------------+
+```
++------------------------------------------------------------------------------------------------------+
+|                                     DOMAIN ENTITY ARCHITECTURE                                       |
++------------------------------------------------------------------------------------------------------+
+|                                                                                                      |
+|                                +----------------------------------+                                  |
+|                                |         PharmacyTracker          |                                  |
+|                                |----------------------------------|                                  |
+|                                | + main(args: String[]): void     |                                  |
+|                                +-----------------+----------------+                                  |
+|                                                  | bootstraps                                        |
+|                                                  v                                                   |
+|                                +----------------------------------+                                  |
+|                                |             Pharmacy             |                                  |
+|                                |----------------------------------|                                  |
+|                                | - name: String                   |                                  |
+|                                | - meds: List<Medication>         |                                  |
+|                                | - customers: List<Customer>      |                                  |
+|                                | - transactions: List<Transaction>|                                  |
+|                                +--------+----------------+--------+                                  |
+|                                         | 1              | 1                                         |
+|                         +---------------+                +---------------+                           |
+|                         | *                              | *                                         |
+|                         v                                v                                           |
+|          +------------------------------+  commits  +-------------------------------+                |
+|          |          Medication          |---------->|          Transaction          |                |
+|          |------------------------------|           |-------------------------------|                |
+|          | - id: int                    |           | - id: int                     |                |
+|          | - name: String               |           | - customerName: String        |                |
+|          | - price: double              |           | - medName: String             |                |
+|          | - stock: int (private)       |           | - qty: int                    |                |
+|          | - category: Category         |           | - total: double               |                |
+|          |------------------------------|           | - type: TransactionType       |                |
+|          | + reduceStock(qty: int): void|           +-------------------------------+                |
+|          | + increaseStock(qty: int)    |               (Immutable Value Object)                     |
+|          | + getStock(): int            |                                                            |
+|          +------------------------------+                                                            |
+|                         ^                                                                            |
+|                         | records interaction                                                        |
+|          +------------------------------+                                                            |
+|          |           Customer           |                                                            |
+|          |------------------------------|                                                            |
+|          | - id: int                    |                                                            |
+|          | - name: String               |                                                            |
+|          | - kind: CustomerType         |                                                            |
+|          | - phone: String              |                                                            |
+|          | - history: List<String>      |                                                            |
+|          |------------------------------|                                                            |
+|          | + setPhone(phone: String)    |                                                            |
+|          | + addHistory(entry: String)  |                                                            |
+|          +------------------------------+                                                            |
+|                                                                                                      |
++------------------------------------------------------------------------------------------------------+
 ```
 
 ---
