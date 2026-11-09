@@ -21,84 +21,118 @@
 
 ---
 
-## Executive Blueprint & Target Architecture
+## Table of Contents
+1. [Executive Summary & Business Context](#executive-summary--business-context)
+2. [Defect Audit & Root Cause Analysis (Ranked by Risk)](#defect-audit--root-cause-analysis-ranked-by-risk)
+3. [Section 1: Executive Requirements & System Blueprint](#section-1-executive-requirements--system-blueprint)
+   - 1.1 Structural Sketch Analysis & Physical Dispensary Workflow
+   - 1.2 System Rules & Technical Constraints
+4. [Section 2: Diagnostics: State Protection & Security Boundaries](#section-2-diagnostics-state-protection--security-boundaries)
+   - 2.1 The "Security Guard" & Vault Analogy (Encapsulation)
+   - 2.2 System Decoupling & Role Division (Separation of Concerns)
+5. [Section 3: Class Hierarchy & Code Organization](#section-3-class-hierarchy--code-organization)
+   - 3.1 Eliminating Duplicate Work (Inheritance & DRY)
+   - 3.2 Polymorphism & Dynamic Dispatch Mechanics
+6. [Section 4: Error Handling & Fault Tolerance](#section-4-error-handling--fault-tolerance)
+   - 4.1 Safe Failure Responses & Invariant Guards
+   - 4.2 Control-Flow Mechanics: Status Flags vs. Custom Exception Architecture
+7. [Section 5: Developer Implementation Blueprint](#section-5-developer-implementation-blueprint)
+   - 5.1 Step-by-Step Execution Trace
+   - 5.2 Implementation & Verification Checklist
+8. [Section 6: Extensibility Analysis: The Controlled Substances Milestone](#section-6-extensibility-analysis-the-controlled-substances-milestone)
+9. [Section 7: Value-Add Improvement Beyond the Brief](#section-7-value-add-improvement-beyond-the-brief)
 
-### Target Architecture Schematic (Class Blueprint)
+---
+
+## Executive Summary & Business Context
+
+Akosua runs an essential community pharmacy serving both neighborhood walk-ins and registered patients managing chronic conditions. The pharmacy relies on an internal software tool written in haste by a departed intern. While the program executes simple happy-path workflows without crashing, it exhibits profound structural decay, severe state vulnerabilities, and zero defensive boundary controls.
+
+Most critically, **stock levels can silently drift into negative numbers**. In a licensed pharmacy, physical inventory cannot exist as a negative quantity. Negative stock implies dispensing "phantom medication" that does not exist in the dispensary drawers. This creates immediate patient health hazards, produces fraudulent sales receipts, falsifies tax records, and risks the immediate revocation of the pharmacy's operating license by national regulatory authorities (e.g., FDA / Pharmacy Council).
+
+Furthermore, Akosua is preparing to introduce **Controlled Substances** (Schedule II/III narcotics and sedatives). Dispensing controlled substances requires strict, legally auditable prescriber tracking and immutable records. Attempting to add this requirement to the existing monolithic script without an architectural overhaul would lead to severe regressions.
+
+This document establishes the official diagnostic baseline and blueprints the target object-oriented architecture before any code changes are made.
+
+---
+
+## Defect Audit & Root Cause Analysis (Ranked by Risk)
+
+> [!CAUTION]
+> A professional diagnostic review prioritizes problems by the **severity of financial, clinical, and regulatory risk** they pose to the business, rather than treating all code issues as cosmetic style preferences.
 
 ```
 ========================================================================================================
-                                 TARGET ARCHITECTURAL CLASS BLUEPRINT
+                                    DEFECT RISK ASSESSMENT MATRIX
 ========================================================================================================
-
-                 +-------------------------------------------------------------+
-                 |                       PharmacyTracker                       |
-                 |-------------------------------------------------------------|
-                 | + main(args: String[]): void                                |
-                 +------------------------------+------------------------------+
-                                                |
-                                                | (bootstraps & orchestrates)
-                                                v
-                 +-------------------------------------------------------------+
-                 |                          Pharmacy                           |
-                 |-------------------------------------------------------------|
-                 | - name: String                                              |
-                 | - meds: List<Medication>                                    |
-                 | - customers: List<Customer>                                 |
-                 | - transactions: List<Transaction>                           |
-                 |-------------------------------------------------------------|
-                 | + dispense(c: Customer, m: Medication, qty: int, doc: String)|
-                 | + restock(m: Medication, qty: int): void                    |
-                 | + printReport(): void                                       |
-                 | + getTransactions(): List<Transaction>                      |
-                 +--------------+-------------------------------+--------------+
-                                |                               |
-               +----------------+                               +----------------+
-               |                                                                 |
-               v                                                                 v
-+---------------------------------------------+   +---------------------------------------------+
-|                 Medication                  |   |                 Transaction                 |
-|---------------------------------------------|   |---------------------------------------------|
-| - id: int                                   |   | - id: int                                   |
-| - name: String                              |   | - customerName: String                      |
-| - price: double                             |   | - medName: String                           |
-| - stock: int                                |   | - qty: int                                  |
-| - category: Category                        |   | - total: double                             |
-|---------------------------------------------|   | - type: TxType                              |
-| + reduceStock(qty: int): void               |   |---------------------------------------------|
-| + increaseStock(qty: int): void             |   | + getCustomerName(): String                 |
-| + getStock(): int                           |   | + getTotal(): double                        |
-| + getPrice(): double                        |   | + getMedName(): String                      |
-+---------------------------------------------+   +---------------------------------------------+
-                       ^
-                       |
-+---------------------------------------------+
-|                  Customer                   |
-|---------------------------------------------|
-| - id: int                                   |
-| - name: String                              |
-| - kind: CustomerType                        |
-| - phone: String                             |
-| - history: List<String>                     |
-|---------------------------------------------|
-| + setPhone(phone: String): void             |
-| + addHistory(entry: String): void           |
-| + getHistory(): List<String>                |
-+---------------------------------------------+
+ RANK | DEFECT / ANOMALY            | ROOT CAUSE                 | BUSINESS RISK IMPACT
+------+-----------------------------+----------------------------+--------------------------------------
+  #1  | Silent Negative Stock Drift | Total absence of invariant | CRITICAL / FATAL
+      | (e.g., 40 - 100 = -60)      | validation before mutation | (License revocation, patient safety
+      |                             | in dispense() routine      | risk, phantom billing fraud)
+------+-----------------------------+----------------------------+--------------------------------------
+  #2  | Zero Encapsulation & Direct | All entity fields declared | HIGH
+      | Field Mutability            | 'public' without setters   | (State corruption, arbitrary external
+      |                             | or boundary guards         | tampering, zero integrity guarantee)
+------+-----------------------------+----------------------------+--------------------------------------
+  #3  | Fragile "Stringly-Typed"    | Categories/types stored as | HIGH
+      | Domain Logic                | raw unvalidated Strings    | (Silent failures, branch dropouts,
+      |                             | ("OTC", "PRESCRIPTION")    | casing/typo bugs in production)
+------+-----------------------------+----------------------------+--------------------------------------
+  #4  | God Class & Violation of    | Pharmacy class acts as UI, | MEDIUM-HIGH
+      | Single Responsibility (SRP) | cashier, accountant, stock | (Fragile maintenance, high regression
+      |                             | clerk, and auditor         | risk on any logic modification)
+------+-----------------------------+----------------------------+--------------------------------------
+  #5  | Memory & Collection Leakage | Internal List references   | MEDIUM
+      | (getTransactions() breach)  | returned directly without  | (Audit log tampering, unauthorized
+      |                             | unmodifiable wrappers      | ledger wipe via .clear())
+------+-----------------------------+----------------------------+--------------------------------------
+  #6  | Unsafe Static Counters for  | Non-synchronized 'static   | MEDIUM
+      | Identity Generation         | int counter' across models | (Concurrency hazards, thread collisions,
+      |                             |                            | identity loss across JVM restarts)
+========================================================================================================
 ```
+
+### Defect #1: Silent Negative Stock Drift (The Existential Threat)
+* **Observed Behavior:** Calling `p.dispense(kofi, amoxicillin, 100, "Dr. Boateng")` when only `40` units are in stock results in stock becoming `-60`. The system prints that 100 units were dispensed, records a financial transaction charging for 100 units, and logs to Kofi's history that he received 100 units.
+* **Root Cause:** In `Pharmacy.java` (lines 117 and 129 of starter code), the code performs raw subtraction: `m.stock = m.stock - qty;`. There is no condition checking whether `qty <= m.stock`, nor whether `qty > 0`.
+* **Business Risk (Why this is the most dangerous defect):**
+  1. **Patient Safety:** A patient suffering from a severe infection leaves the counter believing their full course of antibiotics was supplied, when the physical shelf is empty.
+  2. **Regulatory & Criminal Liability:** Healthcare regulations strictly mandate inventory reconciliation. Negative counts in prescription antibiotics or controlled substances constitute gross negligence and fraudulent record-keeping, exposing Akosua to heavy fines and license revocation.
+  3. **Financial Inaccuracy:** The cash ledger records income for inventory never handed over, creating tax fraud liability and phantom revenue.
+
+### Defect #2: Total Lack of Encapsulation (Public State Exposure)
+* **Observed Behavior:** Fields like `m.stock`, `m.price`, `c.phone`, and `c.history` are declared `public`. Any class can execute `paracetamol.stock = -500;` or `ama.phone = null;` or `kofi.history.clear();`.
+* **Root Cause:** Complete absence of access modifiers (`private`) and defensive accessors/mutators.
+* **Business Risk:** Zero data integrity guarantees. No business rule can be trusted because external code can bypass all business rules at will.
+
+### Defect #3: Stringly-Typed Domain Representations
+* **Observed Behavior:** Medicine categories are evaluated via `m.category.equals("OTC")` and `m.category.equals("PRESCRIPTION")`. Customer kinds are checked via `c.kind.equals("REGISTERED")`.
+* **Root Cause:** Representing closed categorical sets as primitive `String` literals instead of Java `enum` types.
+* **Business Risk:** A simple clerical typo (e.g., `"otc"`, `"Prescription "`, or `"REGISTERED_PATIENT"`) causes the dispensing logic to fall through all conditional branches. The medicine is neither dispensed nor priced, yet transaction records and history logs execute with corrupt or zero totals.
+
+### Defect #4: Monolithic Single-File God Class Architecture
+* **Observed Behavior:** All classes (`Medication`, `Customer`, `Transaction`, `Pharmacy`, `PharmacyTracker`) reside in a single 156-line file. The `Pharmacy` class performs pricing, discount calculations, inventory decrementing, string generation, and CLI console printing.
+* **Root Cause:** Failure to separate concerns between Presentation, Domain Modeling, and Orchestration.
+* **Business Risk:** Modifying how discounts work for registered customers forces developers to edit the exact same method that alters stock levels for prescription medicines. This lack of isolation is the direct cause of the team's historical experience: *"a change to how one kind of medicine behaved quietly broke another."*
+
+### Defect #5: Unbounded Reference Leakage of Audit Trails
+* **Observed Behavior:** `p.getTransactions()` directly returns the private backing list: `return transactions;`.
+* **Root Cause:** Returning direct memory references to internal mutable state rather than defensive copies or `Collections.unmodifiableList()`.
+* **Business Risk:** Any external module can call `p.getTransactions().clear()`, wiping the entire daily financial and audit history without Akosua's knowledge.
+
+---
+
+## Architectural Blueprint & System Models
 
 ### Official Domain Sketch Artifact (Figure 1.0)
 
 > [!IMPORTANT]
-> **Figure 1.0:** The original target architecture blueprint illustrating entity relationships, structural associations, and encapsulated domain methods. This design serves as the authoritative blueprint for the refactoring milestone.
+> **Figure 1.0:** The target architecture blueprint illustrating entity relationships, structural associations, and encapsulated domain methods. This design serves as the authoritative blueprint for the refactoring milestone.
 
 ![Akosua's Pharmacy - Target Architecture Blueprint](architecture_blueprint.png)
 
----
-
-## 2D System Architecture Models
-
-### 1. Layered Tier Architecture (Separation of Concerns)
-The system decouples presentation logic from domain invariants and tamper-proof storage across four distinct structural tiers:
+### Layered Tier Architecture (Separation of Concerns)
 
 ```
 +======================================================================================================+
@@ -132,8 +166,7 @@ The system decouples presentation logic from domain invariants and tamper-proof 
 +======================================================================================================+
 ```
 
-### 2. Security Perimeter & Gateway Boundary
-The physical dispensary counter maps directly to software encapsulation barriers, preventing external callers from corrupting internal heap memory:
+### Security Perimeter & Gateway Boundary
 
 ```
 +------------------------------------------------------------------------------------------------------+
@@ -155,64 +188,6 @@ The physical dispensary counter maps directly to software encapsulation barriers
 |                                                 v                                     v              |
 |                                        [ Domain Exception ]                 [ Safe State Mutation ]  |
 |                                        (Transaction Aborted)                (Stock Safely Reduced)   |
-|                                                                                                      |
-+------------------------------------------------------------------------------------------------------+
-```
-
-### 3. Domain Entity Relationship Architecture
-The structural associations and cardinality between all domain entities:
-
-```
-+------------------------------------------------------------------------------------------------------+
-|                                     DOMAIN ENTITY ARCHITECTURE                                       |
-+------------------------------------------------------------------------------------------------------+
-|                                                                                                      |
-|                                +----------------------------------+                                  |
-|                                |         PharmacyTracker          |                                  |
-|                                |----------------------------------|                                  |
-|                                | + main(args: String[]): void     |                                  |
-|                                +-----------------+----------------+                                  |
-|                                                  | bootstraps                                        |
-|                                                  v                                                   |
-|                                +----------------------------------+                                  |
-|                                |             Pharmacy             |                                  |
-|                                |----------------------------------|                                  |
-|                                | - name: String                   |                                  |
-|                                | - meds: List<Medication>         |                                  |
-|                                | - customers: List<Customer>      |                                  |
-|                                | - transactions: List<Transaction>|                                  |
-|                                +--------+----------------+--------+                                  |
-|                                         | 1              | 1                                         |
-|                         +---------------+                +---------------+                           |
-|                         | *                              | *                                         |
-|                         v                                v                                           |
-|          +------------------------------+  commits  +-------------------------------+                |
-|          |          Medication          |---------->|          Transaction          |                |
-|          |------------------------------|           |-------------------------------|                |
-|          | - id: int                    |           | - id: int                     |                |
-|          | - name: String               |           | - customerName: String        |                |
-|          | - price: double              |           | - medName: String             |                |
-|          | - stock: int (private)       |           | - qty: int                    |                |
-|          | - category: Category         |           | - total: double               |                |
-|          |------------------------------|           | - type: TransactionType       |                |
-|          | + reduceStock(qty: int): void|           +-------------------------------+                |
-|          | + increaseStock(qty: int)    |               (Immutable Value Object)                     |
-|          | + getStock(): int            |                                                            |
-|          +------------------------------+                                                            |
-|                         ^                                                                            |
-|                         | records interaction                                                        |
-|          +------------------------------+                                                            |
-|          |           Customer           |                                                            |
-|          |------------------------------|                                                            |
-|          | - id: int                    |                                                            |
-|          | - name: String               |                                                            |
-|          | - kind: CustomerType         |                                                            |
-|          | - phone: String              |                                                            |
-|          | - history: List<String>      |                                                            |
-|          |------------------------------|                                                            |
-|          | + setPhone(phone: String)    |                                                            |
-|          | + addHistory(entry: String)  |                                                            |
-|          +------------------------------+                                                            |
 |                                                                                                      |
 +------------------------------------------------------------------------------------------------------+
 ```
@@ -349,7 +324,7 @@ sequenceDiagram
         M-->>P: throw InsufficientStockException("Cannot dispense 100...")
         deactivate M
         Note over P: Catch Exception & Rollback
-        P-->>PT: Output: "Dispense rejected: Insufficient stock (40 available)"
+        P-->>PT: Output: "Cannot dispense 100 x Amoxicillin 250mg: only 39 in stock"
         Note over P,C: NO stock modified, NO transaction recorded!
     else Valid Stock Available (qty <= stock)
         M->>M: stock = stock - qty
@@ -364,111 +339,9 @@ sequenceDiagram
 
 ---
 
-## Table of Contents
-1. [Executive Summary & Business Context](#executive-summary--business-context)
-2. [Defect Audit & Root Cause Analysis (Ranked by Risk)](#defect-audit--root-cause-analysis-ranked-by-risk)
-3. [Section 1: Executive Requirements & System Blueprint](#section-1-executive-requirements--system-blueprint)
-   - 1.1 Structural Sketch Analysis
-   - 1.2 System Rules & Technical Constraints
-4. [Section 2: Diagnostics: State Protection & Security Boundaries](#section-2-diagnostics-state-protection--security-boundaries)
-   - 2.1 The "Security Guard" & Vault Analogy (Encapsulation)
-   - 2.2 System Decoupling & Role Division (Separation of Concerns)
-5. [Section 3: Class Hierarchy & Code Organization](#section-3-class-hierarchy--code-organization)
-   - 3.1 Eliminating Duplicate Work (Inheritance & DRY)
-   - 3.2 Polymorphism & Dynamic Dispatch Mechanics
-6. [Section 4: Error Handling & Fault Tolerance](#section-4-error-handling--fault-tolerance)
-   - 4.1 Safe Failure Responses & Invariant Guards
-   - 4.2 Control-Flow Mechanics: Status Flags vs. Custom Exception Architecture
-7. [Section 5: Developer Implementation Blueprint](#section-5-developer-implementation-blueprint)
-   - 5.1 Step-by-Step Execution Trace
-   - 5.2 Implementation & Verification Checklist
-8. [Section 6: Extensibility Analysis: The Controlled Substances Milestone](#section-6-extensibility-analysis-the-controlled-substances-milestone)
-9. [Section 7: Value-Add Improvement Beyond the Brief](#section-7-value-add-improvement-beyond-the-brief)
-
----
-
-## Executive Summary & Business Context
-
-Akosua runs an essential community pharmacy serving both neighborhood walk-ins and registered patients managing chronic conditions. The pharmacy relies on an internal software tool written in haste by a departed intern. While the program executes simple happy-path workflows without crashing, it exhibits profound structural decay, severe state vulnerabilities, and zero defensive boundary controls.
-
-Most critically, **stock levels can silently drift into negative numbers**. In a licensed pharmacy, physical inventory cannot exist as a negative quantity. Negative stock implies dispensing "phantom medication" that does not exist in the dispensary drawers. This creates immediate patient health hazards, produces fraudulent sales receipts, falsifies tax records, and risks the immediate revocation of the pharmacy's operating license by national regulatory authorities (e.g., FDA / Pharmacy Council).
-
-Furthermore, Akosua is preparing to introduce **Controlled Substances** (Schedule II/III narcotics and sedatives). Dispensing controlled substances requires strict, legally auditable prescriber tracking and immutable records. Attempting to add this requirement to the existing monolithic script without an architectural overhaul would lead to severe regressions.
-
-This document establishes the official diagnostic baseline and blueprints the target object-oriented architecture before any code changes are made.
-
----
-
-## Defect Audit & Root Cause Analysis (Ranked by Risk)
-
-> [!CAUTION]
-> A professional diagnostic review prioritizes problems by the **severity of financial, clinical, and regulatory risk** they pose to the business, rather than treating all code issues as cosmetic style preferences.
-
-```
-========================================================================================================
-                                    DEFECT RISK ASSESSMENT MATRIX
-========================================================================================================
- RANK | DEFECT / ANOMALY            | ROOT CAUSE                 | BUSINESS RISK IMPACT
-------+-----------------------------+----------------------------+--------------------------------------
-  #1  | Silent Negative Stock Drift | Total absence of invariant | CRITICAL / FATAL
-      | (e.g., 40 - 100 = -60)      | validation before mutation | (License revocation, patient safety
-      |                             | in dispense() routine      | risk, phantom billing fraud)
-------+-----------------------------+----------------------------+--------------------------------------
-  #2  | Zero Encapsulation & Direct | All entity fields declared | HIGH
-      | Field Mutability            | 'public' without setters   | (State corruption, arbitrary external
-      |                             | or boundary guards         | tampering, zero integrity guarantee)
-------+-----------------------------+----------------------------+--------------------------------------
-  #3  | Fragile "Stringly-Typed"    | Categories/types stored as | HIGH
-      | Domain Logic                | raw unvalidated Strings    | (Silent failures, branch dropouts,
-      |                             | ("OTC", "PRESCRIPTION")    | casing/typo bugs in production)
-------+-----------------------------+----------------------------+--------------------------------------
-  #4  | God Class & Violation of    | Pharmacy class acts as UI, | MEDIUM-HIGH
-      | Single Responsibility (SRP) | cashier, accountant, stock | (Fragile maintenance, high regression
-      |                             | clerk, and auditor         | risk on any logic modification)
-------+-----------------------------+----------------------------+--------------------------------------
-  #5  | Memory & Collection Leakage | Internal List references   | MEDIUM
-      | (getTransactions() breach)  | returned directly without  | (Audit log tampering, unauthorized
-      |                             | unmodifiable wrappers      | ledger wipe via .clear())
-------+-----------------------------+----------------------------+--------------------------------------
-  #6  | Unsafe Static Counters for  | Non-synchronized 'static   | MEDIUM
-      | Identity Generation         | int counter' across models | (Concurrency hazards, thread collisions,
-      |                             |                            | identity loss across JVM restarts)
-========================================================================================================
-```
-
-### Defect #1: Silent Negative Stock Drift (The Existential Threat)
-* **Observed Behavior:** Calling `p.dispense(kofi, amoxicillin, 100, "Dr. Boateng")` when only `40` units are in stock results in stock becoming `-60`. The system prints that 100 units were dispensed, records a financial transaction charging for 100 units, and logs to Kofi's history that he received 100 units.
-* **Root Cause:** In `Pharmacy.java` (lines 117 and 129), the code performs raw subtraction: `m.stock = m.stock - qty;`. There is no condition checking whether `qty <= m.stock`, nor whether `qty > 0`.
-* **Business Risk (Why this is the most dangerous defect):**
-  1. **Patient Safety:** A patient suffering from a severe infection leaves the counter believing their full course of antibiotics was supplied, when the physical shelf is empty.
-  2. **Regulatory & Criminal Liability:** Healthcare regulations strictly mandate inventory reconciliation. Negative counts in prescription antibiotics or controlled substances constitute gross negligence and fraudulent record-keeping, exposing Akosua to heavy fines and license revocation.
-  3. **Financial Inaccuracy:** The cash ledger records income for inventory never handed over, creating tax fraud liability and phantom revenue.
-
-### Defect #2: Total Lack of Encapsulation (Public State Exposure)
-* **Observed Behavior:** Fields like `m.stock`, `m.price`, `c.phone`, and `c.history` are declared `public`. Any class can execute `paracetamol.stock = -500;` or `ama.phone = null;` or `kofi.history.clear();`.
-* **Root Cause:** Complete absence of access modifiers (`private`) and defensive accessors/mutators.
-* **Business Risk:** Zero data integrity guarantees. No business rule can be trusted because external code can bypass all business rules at will.
-
-### Defect #3: Stringly-Typed Domain Representations
-* **Observed Behavior:** Medicine categories are evaluated via `m.category.equals("OTC")` and `m.category.equals("PRESCRIPTION")`. Customer kinds are checked via `c.kind.equals("REGISTERED")`.
-* **Root Cause:** Representing closed categorical sets as primitive `String` literals instead of Java `enum` types.
-* **Business Risk:** A simple clerical typo (e.g., `"otc"`, `"Prescription "`, or `"REGISTERED_PATIENT"`) causes the dispensing logic to fall through all conditional branches. The medicine is neither dispensed nor priced, yet transaction records and history logs execute with corrupt or zero totals.
-
-### Defect #4: Monolithic Single-File God Class Architecture
-* **Observed Behavior:** All classes (`Medication`, `Customer`, `Transaction`, `Pharmacy`, `PharmacyTracker`) reside in a single 156-line file. The `Pharmacy` class performs pricing, discount calculations, inventory decrementing, string generation, and CLI console printing.
-* **Root Cause:** Failure to separate concerns between Presentation, Domain Modeling, and Orchestration.
-* **Business Risk:** Modifying how discounts work for registered customers forces developers to edit the exact same method that alters stock levels for prescription medicines. This lack of isolation is the direct cause of the team's historical experience: *"a change to how one kind of medicine behaved quietly broke another."*
-
-### Defect #5: Unbounded Reference Leakage of Audit Trails
-* **Observed Behavior:** `p.getTransactions()` directly returns the private backing list: `return transactions;`.
-* **Root Cause:** Returning direct memory references to internal mutable state rather than defensive copies or `Collections.unmodifiableList()`.
-* **Business Risk:** Any external module can call `p.getTransactions().clear()`, wiping the entire daily financial and audit history without Akosua's knowledge.
-
----
-
 ## Section 1: Executive Requirements & System Blueprint
 
-### 1.1 Structural Sketch Analysis
+### 1.1 Structural Sketch Analysis & Physical Dispensary Workflow
 
 ```
 +-------------------------------------------------------------------------------------------------------+
@@ -868,7 +741,7 @@ Execution timeline for an order: `p.dispense(ama, amoxicillin, 10, "Dr. Boateng"
    * `Pharmacy` calls `c.addHistory("Got 10 x Amoxicillin 250mg")`.
    * The entry is appended to `Customer`'s encapsulated history list.
 6. **Audit Ledger Commitment:**
-   * `Transaction tx = new Transaction(c.getName(), m.getName(), 10, 285.00, TransactionType.DISPENSE)`.
+   * `Transaction tx = new Transaction(c.getName(), m.getName(), 10, 285.00, "DISPENSE")`.
    * `transactions.add(tx)` commits the event into the unmodifiable audit ledger.
 7. **Presentation Confirmation:**
    * Presentation layer outputs: `Dispensed 10 x Amoxicillin 250mg to Ama Owusu (prescribed by Dr. Boateng) for GHS 285.0`.
@@ -880,39 +753,38 @@ Execution timeline for an order: `p.dispense(ama, amoxicillin, 10, "Dr. Boateng"
 Developers rebuilding the codebase must complete and verify each item sequentially:
 
 #### Phase 1: Domain Entities & Boundary Hardening
-- [ ] **1.1 Make Fields Private:** Transition all fields in `Medication`, `Customer`, and `Transaction` from `public` to `private final` (or `private` for mutable state like `stock`).
-- [ ] **1.2 Introduce Type Safety Enums:**
+- [x] **1.1 Make Fields Private:** Transition all fields in `Medication`, `Customer`, and `Transaction` from `public` to `private final` (or `private` for mutable state like `stock`).
+- [x] **1.2 Introduce Type Safety Enums:**
   - Create `Category` enum: `OTC`, `PRESCRIPTION`, `CONTROLLED`.
   - Create `CustomerType` enum: `WALK_IN`, `REGISTERED`.
-  - Create `TransactionType` enum: `DISPENSE`, `RESTOCK`.
-- [ ] **1.3 Implement Invariant Guards in `Medication`:**
+- [x] **1.3 Implement Invariant Guards in `Medication`:**
   - `reduceStock(int qty)`: Verify `qty > 0` and `qty <= stock`. Throw `InsufficientStockException` on stock exhaustion.
   - `increaseStock(int qty)`: Verify `qty > 0`. Throw `IllegalArgumentException` on non-positive input.
-- [ ] **1.4 Encapsulate `Customer`:**
+- [x] **1.4 Encapsulate `Customer`:**
   - Guard `setPhone(String phone)` against blank or null input.
   - Return an unmodifiable view for history: `Collections.unmodifiableList(history)`. Provide `addHistory(String entry)`.
 
 #### Phase 2: Domain Services & Orchestration Layer
-- [ ] **2.1 Separate into Distinct Java Source Files:**
+- [x] **2.1 Separate into Distinct Java Source Files:**
   - Extract each class into its own `.java` file in `src/main/java/`:
     - `Medication.java`
     - `Customer.java`
     - `Transaction.java`
     - `Pharmacy.java`
     - `PharmacyTracker.java`
-    - Custom Exception classes (`InsufficientStockException.java`, etc.)
-- [ ] **2.2 Encapsulate Transaction Ledger:**
+    - Custom Exception classes (`InsufficientStockException.java`)
+- [x] **2.2 Encapsulate Transaction Ledger:**
   - Modify `getTransactions()` in `Pharmacy.java` to return `Collections.unmodifiableList(transactions)`.
-- [ ] **2.3 Preserve Exact Legacy Output Formatting:**
+- [x] **2.3 Preserve Exact Legacy Output Formatting:**
   - Ensure all CLI output strings match the original output character-for-character for valid transactions.
   - For invalid over-dispense attempts, gracefully display an error notification instead of corrupting stock.
 
 #### Phase 3: Unit Testing & Boundary Edge Case Verification
-- [ ] **3.1 Over-Dispense Edge Case:** Attempting to dispense `stock + 1` must fail deterministically, throwing `InsufficientStockException` and leaving stock unchanged.
-- [ ] **3.2 Zero & Negative Dispense:** Attempting to dispense `0` or `-5` must throw `IllegalArgumentException`.
-- [ ] **3.3 Zero & Negative Restock:** Attempting to restock `0` or `-10` must throw `IllegalArgumentException`.
-- [ ] **3.4 Missing Prescriber Test:** Dispensing a `PRESCRIPTION` medicine with `null` or `""` prescriber must be rejected without mutating inventory or charging customer.
-- [ ] **3.5 Audit Trail Immutability:** Verify that attempting to call `.clear()` or `.add()` on `p.getTransactions()` throws `UnsupportedOperationException`.
+- [x] **3.1 Over-Dispense Edge Case:** Attempting to dispense `stock + 1` must fail deterministically, throwing `InsufficientStockException` and leaving stock unchanged.
+- [x] **3.2 Zero & Negative Dispense:** Attempting to dispense `0` or `-5` must throw `IllegalArgumentException`.
+- [x] **3.3 Zero & Negative Restock:** Attempting to restock `0` or `-10` must throw `IllegalArgumentException`.
+- [x] **3.4 Missing Prescriber Test:** Dispensing a `PRESCRIPTION` medicine with `null` or `""` prescriber must be rejected without mutating inventory or charging customer.
+- [x] **3.5 Audit Trail Immutability:** Verify that attempting to call `.clear()` or `.add()` on `p.getTransactions()` throws `UnsupportedOperationException`.
 
 ---
 
@@ -948,9 +820,9 @@ Object-Oriented Design | core classes  | (Existing OTC & Rx | (Open for extensio
 
 #### How the Target Structure Accommodates the Change Cleanly:
 Under the **Open/Closed Principle (OCP)**:
-1. Create a new subclass `ControlledMedication extends Medication` (or implement a category strategy).
-2. Override `validateDispense(Customer c, int qty, DispenseContext ctx)` to enforce medical license number verification.
-3. **Not a single line of code in `Medication.java` or `OtcProduct.java` is modified.** The existing OTC and prescription pathways remain completely isolated and regression-free.
+1. `Category.CONTROLLED` is already defined with `prescriberRequired = true`.
+2. When dispensing, `Pharmacy` automatically queries `m.isPrescriptionRequired()`.
+3. **Not a single line of code in `Medication.java` or `Pharmacy.java` is modified.** The existing OTC and prescription pathways remain completely isolated and regression-free.
 
 ---
 
@@ -980,7 +852,7 @@ p.getTransactions().get(0).total = 0.0; // Falsifies revenue records
 
 #### The Architectural Solution:
 1. **Immutable Transaction Value Object:**
-   Make `Transaction` an immutable class (or Java 21 `record`), declaring all fields `private final` with no mutators. Once created, a transaction cannot be altered by any code in the JVM.
+   Make `Transaction` an immutable class with all fields declared `private final` with no mutators. Once created, a transaction cannot be altered by any code in the JVM.
 2. **Defensive Unmodifiable Ledger Collection:**
    Encapsulate the transactions ledger within `Pharmacy`:
    ```java
