@@ -118,7 +118,7 @@ public class PharmacyTest {
 
         assertTrue(m.getStock() == 75, "Restocking must increment stock accurately");
         assertTrue(p.getTransactions().size() == 1, "Restocking must record supplier transaction");
-        assertTrue("RESTOCK".equals(p.getTransactions().get(0).getType()), "Transaction type must be RESTOCK");
+        assertTrue(TransactionType.RESTOCK == p.getTransactions().get(0).getType(), "Transaction type must be RESTOCK");
     }
 
     private static void testUnmodifiableTransactionsLedger() {
