@@ -94,7 +94,7 @@
 
 Akosua runs an essential community pharmacy serving both walk-in neighborhood patrons and registered patients requiring chronic therapy monitoring. The pharmacy relies on an internal software application originally authored in haste by a departed intern. While the program executes its basic happy-path routines without crashing immediately, it exhibits profound architectural decay, severe state vulnerabilities, and zero defensive boundary controls.
 
-Most critically, **stock levels can silently drift into negative values**. In a healthcare setting, physical inventory cannot exist as a negative entity. Negative stock implies dispensing "phantom medication" that does not physically exist in the dispensary drawers, putting patient health in immediate jeopardy, fabricating illegitimate sales records, distorting regulatory registers, and risking the immediate revocation of the pharmacy’s operating license by national health authorities (e.g., FDA / Pharmacy Council).
+Most critically, the system has a single root diagnosis: uncontrolled state mutation caused by missing invariant checks and weak encapsulation. Stock, prices, customer details, and transaction history can all be altered directly without guard rails, enabling phantom dispensing, negative inventory, and silent record corruption. In a healthcare setting, that means the application cannot reliably enforce patient safety, financial accuracy, or regulatory compliance.
 
 Furthermore, Akosua is preparing to introduce **Controlled Substances** (Schedule II/III narcotics and sedatives). Dispensing controlled substances requires stringent, legally audited prescriber tracking and immutable audit trails. Attempting to bolt this requirement onto the existing brittle single-file script without an architectural overhaul would precipitate a catastrophic system failure.
 
@@ -102,54 +102,26 @@ This document establishes the official diagnostic baseline and blueprints the ta
 
 ---
 
-## Defect Audit & Root Cause Analysis (Ranked by Risk)
+## Single Root Diagnosis & Risk Analysis
 
-A professional diagnostic review cannot treat all code smells identically. We rank each discovered defect strictly by the **magnitude of financial, clinical, and regulatory risk** it poses to Akosua’s Pharmacy.
+A professional diagnostic review should identify the primary failure mode first. In this case, the underlying problem is one diagnosis: the application violates its own state integrity by allowing direct mutation of core domain data with no validation or boundary control.
 
 ```
 ========================================================================================
-                          RISK PRIORITY MATRIX FOR DEFECTS
+                         SINGLE DIAGNOSIS: UNSAFE STATE MUTATION
 ========================================================================================
- RANK | DEFECT / ANOMALY            | ROOT CAUSE                 | BUSINESS RISK IMPACT
-------+-----------------------------+----------------------------+----------------------
-  #1  | Silent Negative Stock Drift | Total absence of invariant | CRITICAL / FATAL
-      | (e.g. 40 - 100 = -60)       | validation before mutation | (License revocation,
-      |                             | in dispense() routine      | phantom dispensing)
-------+-----------------------------+----------------------------+----------------------
-  #2  | Zero Encapsulation & Direct | All entity fields declared | HIGH
-      | Field Mutability            | 'public' without setters    | (State corruption,
-      |                             | or boundary guards         | arbitrary overwrites)
-------+-----------------------------+----------------------------+----------------------
-  #3  | Fragile "Stringly-Typed"    | Categories/types stored as | HIGH
-      | Domain Logic                | raw unvalidated Strings    | (Silent failures,
-      |                             | ("OTC", "PRESCRIPTION")    | casing/typo bugs)
-------+-----------------------------+----------------------------+----------------------
-  #4  | God Class & Violation of    | Pharmacy class acts as UI, | MEDIUM-HIGH
-      | Single Responsibility (SRP) | cashier, accountant, stock | (Fragile maintenance,
-      |                             | clerk, and auditor         | regression ripple)
-------+-----------------------------+----------------------------+----------------------
-  #5  | Memory & Collection Leakage | Internal List references   | MEDIUM
-      | (getTransactions() breach)  | returned directly without  | (Audit tampering,
-      |                             | unmodifiable wrappers      | unauthorized wipe)
-------+-----------------------------+----------------------------+----------------------
-  #6  | Unsafe Static Counters for  | Non-synchronized 'static   | MEDIUM
-      | Identity Generation         | int counter' across models | (Concurrency hazards,
-      |                             |                            | collision on restart)
+ RANK | DIAGNOSIS / ANOMALY                                 | ROOT CAUSE                                     | BUSINESS RISK IMPACT
+------+-----------------------------------------------------+------------------------------------------------+----------------------
+  #1  | Unsafe state mutation without invariant validation | Direct field writes and raw subtraction        | CRITICAL / FATAL
+      | and encapsulation                                  | in dispense() plus public mutable state         | (Phantom dispensing,
+      |                                                     |                                               | audit corruption)
 ========================================================================================
 ```
 
-### Defect #1: Silent Negative Stock Drift (The Existential Threat)
-* **Observed Behavior:** Calling `p.dispense(kofi, amoxicillin, 100, "Dr. Boateng")` when only `40` units are in stock results in stock becoming `-60`. The system prints that 100 units were dispensed, records a financial transaction charging for 100 units, and logs to Kofi's history that he received 100 units.
-* **Root Cause:** In `Pharmacy.java` (lines 117 and 129), the code performs raw subtraction: `m.stock = m.stock - qty;`. There is no condition checking whether `qty <= m.stock`, nor whether `qty > 0`.
-* **Business Risk (Why this is the most dangerous problem):**
-  1. **Patient Safety:** A patient suffering from a bacterial infection leaves the counter believing their full course of antibiotics has been supplied, when the physical shelf is bare.
-  2. **Regulatory & Criminal Liability:** Pharmacopeia regulations strictly mandate inventory reconciliation. Negative counts in prescription antibiotics or controlled substances constitute gross negligence and fraudulent record-keeping, exposing Akosua to heavy fines and license revocation.
-  3. **Financial Inaccuracy:** The cash ledger records income for inventory never handed over, creating tax fraud liability and phantom revenue.
-
-### Defect #2: Total Lack of Encapsulation (Public State Exposure)
-* **Observed Behavior:** Fields like `m.stock`, `m.price`, `c.phone`, and `c.history` are declared `public`. Any class or rogue snippet can execute `paracetamol.stock = -500;` or `ama.phone = null;` or `kofi.history.clear();`.
-* **Root Cause:** Complete absence of access modifiers (`private`) and defensive accessors/mutators.
-* **Business Risk:** Zero data integrity guarantees. No business rule can be trusted because external code can bypass all business rules at will.
+### Single Diagnosis: Unsafe State Mutation Without Validation and Encapsulation
+* **Observed Behavior:** Calling `p.dispense(kofi, amoxicillin, 100, "Dr. Boateng")` when only `40` units are in stock can reduce the inventory to `-60`. The same system also allows fields like `m.stock`, `m.price`, `c.phone`, and `c.history` to be changed directly from outside the model. Any class or rogue snippet can execute `paracetamol.stock = -500;` or `kofi.history.clear();`.
+* **Root Cause:** The code performs raw subtraction without checking `qty <= m.stock` or `qty > 0`, and the domain model exposes state publicly instead of using `private` fields with validation and accessors/mutators.
+* **Business Risk:** This is the single root cause behind patient-safety failures, regulatory breaches, audit tampering, and phantom financial records. When invariant checks and encapsulation are absent, no business rule can be trusted.
 
 ### Defect #3: Stringly-Typed Domain Representations
 * **Observed Behavior:** Medicine categories are evaluated via `m.category.equals("OTC")` and `m.category.equals("PRESCRIPTION")`. Customer kinds are checked via `c.kind.equals("REGISTERED")`.
