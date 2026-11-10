@@ -86,13 +86,15 @@ public class Pharmacy {
 
         // Guard: quantity must be a positive integer
         if (qty <= 0) {
-            System.out.println("Cannot dispense non-positive quantity: " + qty);
+            System.out.println("Cannot dispense " + qty + " x " + m.getName()
+                    + ": quantity must be positive");
             return;
         }
 
         // Guard: prescription and controlled substances require an authorized prescriber
         if (m.isPrescriptionRequired() && (prescriber == null || prescriber.isBlank())) {
-            System.out.println("Cannot dispense " + m.getName() + " without a prescriber");
+            System.out.println("Cannot dispense " + qty + " x " + m.getName()
+                    + ": prescriber required");
             return;
         }
 
@@ -136,7 +138,8 @@ public class Pharmacy {
         Objects.requireNonNull(m, "Medication cannot be null");
 
         if (qty <= 0) {
-            System.out.println("Cannot restock non-positive quantity: " + qty);
+            System.out.println("Cannot restock " + qty + " x " + m.getName()
+                    + ": quantity must be positive");
             return;
         }
 

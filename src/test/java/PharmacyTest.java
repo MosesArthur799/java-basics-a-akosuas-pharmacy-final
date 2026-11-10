@@ -4,19 +4,17 @@ import java.util.List;
 
 /**
  * Regression and domain validation suite for Akosua's Pharmacy.
- * Silently validates all business rules and invariants, then presents the standard pharmacy execution.
+ * Validates the business rules and invariants without running the application demo.
  */
 public class PharmacyTest {
 
     private static final PrintStream CONSOLE = System.out;
     private static final PrintStream SILENT = new PrintStream(OutputStream.nullOutputStream());
+    private static final int ASSERTION_COUNT = 18;
 
     public static void main(String[] args) {
-        // Step 1: Run all 18 regression assertions silently
         runAllAssertionsSilently();
-
-        // Step 2: Present the clean, professional pharmacy execution matching the original program
-        PharmacyTracker.main(args);
+        System.out.println("All " + ASSERTION_COUNT + " assertions passed.");
     }
 
     private static void runAllAssertionsSilently() {
