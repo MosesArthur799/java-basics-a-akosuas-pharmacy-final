@@ -1,7 +1,4 @@
-/**
- * Represents the regulatory classification of medications stocked by the pharmacy.
- * Encapsulates whether a prescription is legally required before dispensing.
- */
+// Keep prescription rules with the category instead of adding medication subclasses.
 public enum Category {
     OTC("OTC", false),
     PRESCRIPTION("PRESCRIPTION", true),

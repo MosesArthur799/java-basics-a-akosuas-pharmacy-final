@@ -2,13 +2,10 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.List;
 
-/**
- * Regression and domain validation suite for Akosua's Pharmacy.
- * Validates the business rules and invariants without running the application demo.
- */
 public class PharmacyTest {
 
     private static final PrintStream CONSOLE = System.out;
+    // Hide receipt output during tests so only the test result is printed.
     private static final PrintStream SILENT = new PrintStream(OutputStream.nullOutputStream());
     private static final int ASSERTION_COUNT = 18;
 
@@ -30,6 +27,7 @@ public class PharmacyTest {
             testUnmodifiableTransactionsLedger();
             testControlledSubstancesReadiness();
         } finally {
+            // Restore output even if a test throws unexpectedly.
             System.setOut(CONSOLE);
         }
     }
@@ -93,8 +91,8 @@ public class PharmacyTest {
         Customer c = new Customer("Kofi", CustomerType.WALK_IN);
         p.addMedication(m);
 
-        // Attempting to dispense 100 when only 40 are available
         p.dispense(c, m, 100, "Dr. Boateng");
+        // A rejected request must leave every part of the customer transaction unchanged.
         assertTrue(m.getStock() == 40, "Over-dispense must be rejected; stock must remain 40");
         assertTrue(p.getTransactions().isEmpty(), "Over-dispense must record no transaction");
         assertTrue(c.getHistory().isEmpty(), "Over-dispense must record no customer history");

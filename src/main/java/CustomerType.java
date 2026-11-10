@@ -1,7 +1,4 @@
-/**
- * Represents the customer membership tier within Akosua's Pharmacy.
- * Encapsulates loyalty discount rates applied during dispensing.
- */
+// Each membership type carries the discount used when calculating a sale.
 public enum CustomerType {
     WALK_IN("WALK_IN", 0.0),
     REGISTERED("REGISTERED", 0.05);
